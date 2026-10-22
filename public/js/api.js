@@ -109,3 +109,41 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('[data-stop]')) e.stopPropagation();
 });
 
+// ================================================================
+// MOBILE SIDEBAR TOGGLE (Hanya berjalan di HP)
+// ================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const aside = document.querySelector('aside');
+  if (!aside) return;
+
+  // Buat tombol menu
+  const btn = document.createElement('div');
+  btn.id = 'mobile-menu-btn';
+  btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>';
+  
+  // Buat overlay gelap
+  const overlay = document.createElement('div');
+  overlay.id = 'mobile-overlay';
+
+  document.body.appendChild(btn);
+  document.body.appendChild(overlay);
+
+  // Fungsi buka/tutup
+  function toggleMenu() {
+    aside.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+
+  // Event Listener
+  btn.addEventListener('click', toggleMenu);
+  overlay.addEventListener('click', toggleMenu);
+
+  // Tutup menu saat link diklik (berpindah halaman)
+  const navLinks = aside.querySelectorAll('nav a');
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      aside.classList.remove('open');
+      overlay.classList.remove('show');
+    });
+  });
+});

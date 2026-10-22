@@ -361,11 +361,11 @@ td[colspan] { color: var(--text-3) !important; }
 @view-transition {
   navigation: auto;
 }
-
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.18s;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-duration: 0.25s;
+  animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  mix-blend-mode: normal;
 }
 
 /* Konten utama slide-up halus */
@@ -398,4 +398,198 @@ main {
   ::view-transition-new(root) {
     animation-duration: 0.01ms !important;
   }
+}
+
+/* ============================================================
+   MOBILE UI (Hanya aktif di layar kecil / HP)
+   ============================================================ */
+@media (max-width: 768px) {
+  /* 1. Wrapper block agar tidak saling mendorong */
+  .flex.min-h-screen {
+    display: block !important;
+  }
+
+  /* 2. SIDEBAR (Gunakan transform agar GPU yang bekerja, 60fps) */
+  aside {
+    position: fixed !important;
+    top: 0;
+    bottom: 0;
+    left: 0 !important; /* Reset left */
+    width: 260px !important;
+    z-index: 1000;
+    transform: translateX(-100%) !important; /* Sembunyikan ke kiri */
+    will-change: transform; /* Paksa GPU render */
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important; /* Animasi kenyal */
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5) !important;
+  }
+
+  /* 3. Munculkan sidebar */
+  aside.open {
+    transform: translateX(0) !important;
+  }
+
+  /* 4. OVERLAY GELAP (Smooth blur) */
+  #mobile-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 998;
+    opacity: 0;
+    will-change: opacity;
+    transition: opacity 0.35s ease-in-out;
+  }
+  #mobile-overlay.show {
+    display: block;
+    opacity: 1;
+  }
+
+  /* 5. Tombol Hamburger */
+  #mobile-menu-btn {
+    display: flex !important;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 999;
+    background: #1e293b;
+    color: #fff;
+    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.1s, background-color 0.2s;
+  }
+  
+  /* Efek tombol ditekan */
+  #mobile-menu-btn:active {
+    transform: scale(0.9);
+    background: #0f172a;
+  }
+
+  /* 6. Main content penuhi layar */
+  main {
+    margin-left: 0 !important;
+    padding: 16px !important;
+    padding-top: 70px !important;
+    width: 100% !important;
+    animation: none !important; /* Hilangkan animasi pageEnter agar tidak dobel dengan View Transitions */
+  }
+
+  /* 7. Kustomisasi Tabel (Swipe) */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+  table { font-size: 0.8rem !important; }
+  th, td { padding: 10px 8px !important; }
+
+  /* 8. Perbaiki Susunan Header di HP (Judul & Tombol) */
+  main > div:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+  main > div:first-child > div:last-child {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+  main > div:first-child > div:last-child > * {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  main h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+  }
+
+    /* ============================================================
+     PERBAIKAN LAYOUT MOBILE (KHUSUS HP)
+     ============================================================ */
+
+  /* --- 1. FIX TABEL (Laporan & Halaman Lain) --- */
+  .overflow-x-auto {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    min-width: 700px !important; /* Paksa tabel melebar agar bisa di-swipe */
+  }
+
+  /* --- 2. FIX SCAN MODE (Susunan Atas-Bawah) --- */
+  #scan-app div[style*="grid-template-columns: 1fr 340px"] {
+    grid-template-columns: 1fr !important; /* Paksa jadi 1 kolom */
+    gap: 16px !important;
+  }
+  /* Batasi tinggi log aktivitas di HP agar tidak kepanjangan */
+  #scan-app div[style*="grid-template-columns: 1fr 340px"] > div:last-child {
+    max-height: 250px !important;
+    margin-top: 8px;
+  }
+  /* Perkecil padding card scan di HP */
+  #scan-app .card, #scan-app > div > div > div > div {
+    padding: 16px !important;
+  }
+  #scan-app h1 { font-size: 1.4rem !important; }
+  #scan-app .scan-input { font-size: 0.95rem !important; padding: 14px 16px !important; }
+
+  /* --- 3. FIX LAPORAN (TABS & FILTER) --- */
+  /* Tabs bisa digeser ke samping (swipe) */
+  main > div.flex.gap-2.mb-4.border-b {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    padding-bottom: 4px;
+  }
+  main > div.flex.gap-2.mb-4.border-b > button {
+    flex-shrink: 0 !important;
+  }
+
+  /* Filter Date & Status ditumpuk ke bawah */
+  #view-peminjaman > div.bg-white.flex.flex-wrap,
+  #view-kunjungan > div.bg-white.flex.flex-wrap {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 16px !important;
+  }
+  #view-peminjaman > div.bg-white.flex.flex-wrap > div,
+  #view-kunjungan > div.bg-white.flex.flex-wrap > div {
+    width: 100% !important;
+    margin-bottom: 8px;
+  }
+  #view-peminjaman > div.bg-white.flex.flex-wrap input,
+  #view-peminjaman > div.bg-white.flex.flex-wrap select,
+  #view-kunjungan > div.bg-white.flex.flex-wrap select {
+    width: 100% !important;
+  }
+  
+  /* Tombol Terapkan & Preset (Hari ini, 7 hari, 30 hari) */
+  #btn-terapkan { width: 100% !important; margin-bottom: 8px; }
+  .flex.gap-2.ml-auto { margin-left: 0 !important; width: 100%; justify-content: space-between; }
+  .flex.gap-2.ml-auto > button { flex: 1; }
+
+  /* --- 4. FIX TOMBOL EXPORT & PRINT LAPORAN --- */
+  #view-peminjaman > div.flex.gap-2.mb-3, 
+  #view-kunjungan > div.flex.items-center.justify-between.mb-3 {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  #view-peminjaman > div.flex.gap-2.mb-3 > button,
+  #view-kunjungan > div.flex.items-center.justify-between.mb-3 > div.flex.gap-2 > button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* Sembunyikan tombol menu di Laptop (layar lebar) */
+@media (min-width: 769px) {
+  #mobile-menu-btn { display: none !important; }
 }
