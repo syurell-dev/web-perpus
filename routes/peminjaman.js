@@ -185,6 +185,11 @@ router.post('/', (req, res) => {
     if (anggota.status !== 'aktif') {
       return res.status(400).json({ status: 'error', message: 'Anggota tidak aktif, tidak bisa meminjam' });
     }
+        // CEK SANKSI
+    const today = todayStr();
+    if (anggota.banned_until && anggota.banned_until >= today) {
+      return res.status(400).json({ status: 'error', message: `Anggota sedang dalam masa sanksi hingga ${anggota.banned_until} dan tidak bisa meminjam buku.` });
+    }
 
     const maxBuku = parseInt(getSetting('max_buku_per_pinjam', '3'), 10);
     const totalBuku = buku_list.reduce((s, b) => s + (parseInt(b.jumlah) || 1), 0);
@@ -305,12 +310,20 @@ router.post('/:id/kembalikan', (req, res) => {
       `);
 
       let totalDendaBaru = 0;
+      let isTerlambat = false; // ◄ TAMBAHKAN INI
 
       for (const d of details) {
         const denda = hitungDenda(peminjaman.tanggal_jatuh, tglKembali, dendaPerHari);
         updateDetail.run(tglKembali, denda, d.id);
         updateStok.run(d.jumlah, d.buku_id);
         totalDendaBaru += denda;
+        if (tglKembali > peminjaman.tanggal_jatuh) isTerlambat = true; // ◄ TAMBAHKAN INI
+
+      }
+
+      if (isTerlambat) {
+        const bannedUntil = addDays(tglKembali, 7);
+        db.prepare('UPDATE anggota SET banned_until = ? WHERE id = ?').run(bannedUntil, peminjaman.anggota_id);
       }
 
       const sisa = db.prepare(`

@@ -165,6 +165,22 @@
               <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
             </svg>
             Scan Barcode
+                      <div class="section-title" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+              </svg>
+              Scan Barcode
+            </div>
+            <!-- TOGGLE SWITCH BARU -->
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; background: #f1f5f9; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: #475569; transition: all 0.2s;" id="label-force-return">
+              <input type="checkbox" id="toggle-force-return" style="width: 14px; height: 14px; cursor: pointer; accent-color: #dc2626;">
+              Mode Kembalikan
+            </label>
+          </div>
+
           </div>
           <input id="scan-input" type="text" autocomplete="off" class="scan-input"
             placeholder="Scan Buku (untuk pinjam) ATAU Scan NIS (untuk baca)...">
@@ -280,8 +296,7 @@
                  style="width:${size}px;height:${size}px;">${SVG[name]}</svg>`;
   }
 
-  const state = { bukuList: [], processing: false };
-
+  const state = { bukuList: [], processing: false, forceReturn: false };
   async function masukFullscreen() {
     try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen(); } catch(e){}
   }
@@ -423,7 +438,8 @@
       // 1. Simpan Peminjaman
       const res = await apiPost('/scan/proses', {
         anggota_id: anggota.id,
-        buku_list: state.bukuList.map(b => ({ buku_id: b.id, jumlah: 1 }))
+        buku_list: state.bukuList.map(b => ({ buku_id: b.id, jumlah: 1 })),
+        force_return: state.forceReturn // <--- TAMBAHKAN INI
       });
 
       // 2. Catat ke Buku Tamu sebagai 'pinjam'
@@ -437,6 +453,10 @@
       tampilkanSukses(anggota, res);
       
       state.bukuList = [];
+      state.forceReturn = false; // <--- RESET
+      document.getElementById('toggle-force-return').checked = false; // <--- RESET UI
+      document.getElementById('label-force-return').style.background = '#f1f5f9';
+      document.getElementById('label-force-return').style.color = '#475569';
       renderList();
       
       setTimeout(() => {
@@ -568,6 +588,20 @@
     });
     setTimeout(() => input.focus(), 200);
     addLog('Mode Scan siap — scan buku dulu, lalu kartu', 'success');
+        const toggleReturn = document.getElementById('toggle-force-return');
+    const labelReturn = document.getElementById('label-force-return');
+    toggleReturn.addEventListener('change', (e) => {
+      state.forceReturn = e.target.checked;
+      if (state.forceReturn) {
+        labelReturn.style.background = '#fee2e2';
+        labelReturn.style.color = '#b91c1c';
+        addLog('Mode: Pengembalian Buku aktif', 'warn');
+      } else {
+        labelReturn.style.background = '#f1f5f9';
+        labelReturn.style.color = '#475569';
+        addLog('Mode: Normal (Perpanjang Otomatis)', 'info');
+      }
+    });
   });
 
   window.hapusBuku = hapusBuku;

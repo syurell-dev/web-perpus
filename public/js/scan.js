@@ -4,7 +4,8 @@
 
 const state = {
   bukuList: [],
-  processing: false
+  processing: false,
+  forceReturn: false
 };
 
 // ================================================================
@@ -154,7 +155,8 @@ async function prosesSemua(anggota, tujuan = 'pinjam') {
 
     const payload = {
       anggota_id: anggota.id,
-      buku_list: state.bukuList.map(b => ({ buku_id: b.id, jumlah: 1 }))
+      buku_list: state.bukuList.map(b => ({ buku_id: b.id, jumlah: 1 })),
+      force_return: state.forceReturn
     };
 
     const res = await apiPost('/scan/proses', payload);
@@ -172,6 +174,17 @@ async function prosesSemua(anggota, tujuan = 'pinjam') {
     await apiPost('/scan/tamu', { anggota_id: anggota.id, tujuan: 'pinjam' });
 
     state.bukuList = [];
+    state.forceReturn = false;
+    
+    const toggleUI = document.getElementById('toggle-force-return');
+    if (toggleUI) toggleUI.checked = false;
+    
+    const labelUI = document.getElementById('label-force-return');
+    if (labelUI) {
+      labelUI.style.background = '#f1f5f9';
+      labelUI.style.color = '#475569';
+    }
+    
     renderList();
 
     setTimeout(() => {
@@ -285,6 +298,25 @@ async function prosesTamu(anggota, tujuan = 'baca') {
 // INIT
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
+    // --- PATCH: Event Listener Toggle Force Return ---
+  const toggleReturn = document.getElementById('toggle-force-return');
+  const labelReturn = document.getElementById('label-force-return');
+  
+  if (toggleReturn && labelReturn) {
+    toggleReturn.addEventListener('change', (e) => {
+      state.forceReturn = e.target.checked;
+      if (state.forceReturn) {
+        labelReturn.style.background = '#fee2e2';
+        labelReturn.style.color = '#b91c1c';
+        addLog('Mode: Pengembalian Buku aktif', 'warn');
+      } else {
+        labelReturn.style.background = '#f1f5f9';
+        labelReturn.style.color = '#475569';
+        addLog('Mode: Normal (Perpanjang Otomatis)', 'info');
+      }
+    });
+  }
+  // --- END PATCH ---
   const input = document.getElementById('scan-input');
 
   input.addEventListener('keydown', async (e) => {

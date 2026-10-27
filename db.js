@@ -148,6 +148,20 @@ try {
   console.error("❌ Gagal migrasi tanggal_aktif_sampai:", err.message);
 }
 
+// (Kode sebelumnya: Migrasi tanggal_aktif_sampai...)
+
+// ▼▼▼ TAMBAHKAN BLOK INI ▼▼▼
+try {
+  const anggotaInfo = db.prepare("PRAGMA table_info(anggota)").all();
+  const hasBanned = anggotaInfo.some(c => c.name === 'banned_until');
+  if (!hasBanned) {
+    db.exec("ALTER TABLE anggota ADD COLUMN banned_until DATE");
+    console.log("✅ Migrasi: Kolom banned_until ditambahkan ke tabel anggota");
+  }
+} catch (err) {
+  console.error("❌ Gagal migrasi banned_until:", err.message);
+}
+// ▲▲▲ SAMPAI SINI ▲▲▲
 // ================================================================
 // SEED DATA DEFAULT
 // ================================================================
