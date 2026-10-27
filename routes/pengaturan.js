@@ -9,6 +9,9 @@ const path = require('path');
 const pkg = require('../package.json');
 const DB_PATH = path.join(__dirname, '..', 'database', 'perpus.db');
 
+// Regex tanggal YYYY-MM-DD
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 // ================================================================
 // GET /api/pengaturan — semua pengaturan
 // ================================================================
@@ -32,13 +35,13 @@ router.get('/', (req, res) => {
       detail:   db.prepare('SELECT COUNT(*) as n FROM peminjaman_detail').get().n
     };
 
-        res.json({
+    res.json({
       status: 'ok',
       data: rows,
-      app: {                                    // ← BARU
-        version: pkg.version,                   // ← BARU
-        name: pkg.name                          // ← BARU
-      },                                        // ← BARU
+      app: {
+        version: pkg.version,
+        name: pkg.name
+      },
       info: {
         db_size: dbSize,
         db_size_human: (dbSize / 1024).toFixed(2) + ' KB',
@@ -54,20 +57,40 @@ router.get('/', (req, res) => {
 
 // ================================================================
 // PUT /api/pengaturan — update banyak setting sekaligus
-// Body: { denda_per_hari: "1000", lama_pinjam_default: "14", ... }
+// Body: { denda_per_hari: "1000", domain_expired_at: "2026-12-31", ... }
 // ================================================================
 router.put('/', (req, res) => {
   try {
     const updates = req.body || {};
-    const allowedKeys = ['denda_per_hari', 'lama_pinjam_default', 'max_buku_per_pinjam', 'nama_perpustakaan'];
+    const allowedKeys = [
+      'denda_per_hari',
+      'lama_pinjam_default',
+      'max_buku_per_pinjam',
+      'nama_perpustakaan',
+      'domain_expired_at' // ← BARU
+    ];
 
     // Validasi
     const errors = [];
     for (const [k, v] of Object.entries(updates)) {
       if (!allowedKeys.includes(k)) continue;
+
       if (['denda_per_hari', 'lama_pinjam_default', 'max_buku_per_pinjam'].includes(k)) {
         const n = parseInt(v, 10);
         if (isNaN(n) || n < 0) errors.push(`${k} harus angka >= 0`);
+      } else if (k === 'domain_expired_at') {
+        // Boleh kosong (menghapus tanggal), atau harus format YYYY-MM-DD valid
+        const s = String(v == null ? '' : v).trim();
+        if (s !== '') {
+          if (!DATE_RE.test(s)) {
+            errors.push('domain_expired_at harus format YYYY-MM-DD');
+            continue;
+          }
+          const d = new Date(s + 'T00:00:00');
+          if (isNaN(d.getTime())) {
+            errors.push('domain_expired_at bukan tanggal yang valid');
+          }
+        }
       }
     }
     if (errors.length) {
@@ -79,7 +102,7 @@ router.put('/', (req, res) => {
       let count = 0;
       for (const [k, v] of Object.entries(data)) {
         if (!allowedKeys.includes(k)) continue;
-        stmt.run(String(v), k);
+        stmt.run(String(v == null ? '' : v), k);
         count++;
       }
       return count;

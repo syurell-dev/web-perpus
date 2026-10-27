@@ -13,6 +13,7 @@ const peminjamanRouter = require('./routes/peminjaman');
 const laporanRouter    = require('./routes/laporan');
 const pengaturanRouter = require('./routes/pengaturan');
 const scanRouter       = require('./routes/scan');
+const pengingatRouter  = require('./routes/pengingat'); // ← BARU
 
 const app = express();
 
@@ -64,12 +65,13 @@ app.use('/api/peminjaman', peminjamanRouter);
 app.use('/api/laporan',    laporanRouter);
 app.use('/api/pengaturan', pengaturanRouter);
 app.use('/api/scan',       scanRouter);
+app.use('/api/pengingat',  pengingatRouter); // ← BARU
 
 // ===== 404 & Error handler =====
 app.use('/api', (req, res) => res.status(404).json({ error: 'Endpoint tidak ditemukan' }));
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.message, err.stack);
-  res.status(500).json({ error: 'Terjadi kesalahan pada server' }); // pesan generik
+  res.status(500).json({ error: 'Terjadi kesalahan pada server' });
 });
 
 // ===== Start =====

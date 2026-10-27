@@ -7,15 +7,16 @@
   <title>Pengaturan - Perpustakaan Sekolah</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
-    <script src="/vendor/lucide.min.js"></script>
+  <script src="/vendor/lucide.min.js"></script>
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/pengingat.css">
   <link rel="stylesheet" href="/css/print.css" media="print">
 </head>
 <body class="bg-slate-100 min-h-screen">
 
   <div class="flex min-h-screen">
 
-    <!-- ============ SIDEBAR ============ -->
+    <!-- ============ SIDEBAR (DIKEMBALIKAN KE ASLI) ============ -->
     <aside class="w-60 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col">
       <div class="p-5 border-b border-slate-700">
         <div class="flex items-center gap-2">
@@ -26,7 +27,7 @@
         </div>
       </div>
 
-                  <nav class="flex-1 p-3 space-y-1 text-sm">
+      <nav class="flex-1 p-3 space-y-1 text-sm">
         <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300" >
           <span>🏠</span> <span>Dashboard</span>
         </a>
@@ -94,6 +95,30 @@
                     class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
               </div>
+
+              <!-- ========================================== -->
+              <!-- MASA AKTIF DOMAIN (BARU) -->
+              <!-- ========================================== -->
+              <div class="mt-6 pt-6 border-t border-slate-200">
+                <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                  <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Masa Aktif Sistem (Domain)
+                </h3>
+                <div class="flex flex-wrap gap-3 items-end">
+                  <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Berakhir Pada</label>
+                    <input type="date" id="f-domain_expired_at"
+                      class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  </div>
+                  <div>
+                    <button type="button" id="btn-perpanjang-domain"
+                      class="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                      <i data-lucide="plus-circle" class="w-4 h-4"></i> Perpanjang 365 Hari
+                    </button>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Pengingat otomatis muncul saat login jika masa aktif kurang dari 120 hari lagi.</p>
+              </div>
+              <!-- ========================================== -->
 
               <div class="flex justify-end pt-4 border-t border-slate-200">
                 <button type="submit" id="btn-simpan"
@@ -314,5 +339,6 @@
   <script src="/js/api.js"></script>
   <script src="/js/pengaturan.js"></script>
     <script src="/js/icons.js"></script>
+  <script src="/js/pengingat-domain.js"></script>
 </body>
 </html>

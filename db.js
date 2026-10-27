@@ -146,6 +146,8 @@ const pengaturanDefault = [
   ['lama_pinjam_default',  '7',    'Lama peminjaman default (hari)'],
   ['max_buku_per_pinjam',  '3',    'Maksimal buku per transaksi'],
   ['nama_perpustakaan',    'Perpustakaan Sekolah', 'Nama perpustakaan'],
+  // ▼▼▼ BARU — masa aktif domain/sistem (kosong = belum diatur) ▼▼▼
+  ['domain_expired_at',    '',     'Masa aktif domain/sistem perpustakaan (YYYY-MM-DD, kosong = belum diatur)'],
 ];
 
 const insertPengaturan = db.prepare(`
@@ -205,10 +207,6 @@ if (countAnggota === 0) {
 }
 
 // ================================================================
-// EXPORT
-// ================================================================
-
-// ================================================================
 // SEED ADMIN — buat akun default jika belum ada
 // ================================================================
 const crypto = require('crypto');
@@ -241,6 +239,8 @@ if (countUsers === 0) {
   console.log('');
 }
 
+// ================================================================
+// EXPORT
+// ================================================================
 module.exports = Object.assign(db, { hashPassword });
-
 module.exports = db;

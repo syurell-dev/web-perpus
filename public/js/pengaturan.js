@@ -24,17 +24,20 @@ async function loadPengaturan() {
     state.settings = {};
     res.data.forEach(p => { state.settings[p.key] = p.value; });
 
-    // Isi form
+    // Isi form pengaturan umum
     document.getElementById('f-nama_perpustakaan').value  = state.settings.nama_perpustakaan || '';
     document.getElementById('f-denda_per_hari').value     = state.settings.denda_per_hari || 500;
     document.getElementById('f-lama_pinjam_default').value = state.settings.lama_pinjam_default || 7;
     document.getElementById('f-max_buku_per_pinjam').value = state.settings.max_buku_per_pinjam || 3;
+    
+    // Isi form masa aktif domain
+    document.getElementById('f-domain_expired_at').value  = state.settings.domain_expired_at || '';
 
     // Info aplikasi — versi otomatis dari package.json
     const versionEl = document.querySelector('[data-app-version]');
     if (versionEl && res.app) versionEl.textContent = 'v' + res.app.version;
 
-    // Isi info
+    // Isi info database
     const info = res.info;
     document.getElementById('info-size').textContent = info.db_size_human;
     document.getElementById('info-mtime').textContent = formatTanggalWaktu(info.db_mtime);
@@ -57,12 +60,14 @@ async function simpanPengaturan(e) {
     nama_perpustakaan:   document.getElementById('f-nama_perpustakaan').value.trim(),
     denda_per_hari:      document.getElementById('f-denda_per_hari').value,
     lama_pinjam_default: document.getElementById('f-lama_pinjam_default').value,
-    max_buku_per_pinjam: document.getElementById('f-max_buku_per_pinjam').value
+    max_buku_per_pinjam: document.getElementById('f-max_buku_per_pinjam').value,
+    domain_expired_at:   document.getElementById('f-domain_expired_at').value
   };
 
   const btn = document.getElementById('btn-simpan');
   btn.disabled = true;
-  btn.textContent = 'Menyimpan...';
+  btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Menyimpan...';
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 
   try {
     const res = await apiPut('/pengaturan', payload);
@@ -72,7 +77,44 @@ async function simpanPengaturan(e) {
     toast(err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = '💾 Simpan Pengaturan';
+    btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Simpan Pengaturan';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
+}
+
+// ================================================================
+// PERPANJANG DOMAIN (TOMBOL CEPAT)
+// ================================================================
+async function perpanjangDomain() {
+  if (!confirm('Perpanjang masa aktif sistem selama 365 hari dari tanggal berakhir saat ini?')) return;
+  
+  const btn = document.getElementById('btn-perpanjang-domain');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Memproses...';
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  try {
+    // Panggil endpoint GET /api/pengingat/domain/perpanjang
+    const res = await fetch('/api/pengingat/domain/perpanjang', {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json' }
+    });
+    const json = await res.json();
+
+    if (!res.ok || json.status !== 'ok') {
+      throw new Error(json.message || 'Gagal memperpanjang domain');
+    }
+
+    toast(json.message, 'success');
+    await loadPengaturan(); // Reload untuk menampilkan tanggal baru di form
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 }
 
@@ -251,7 +293,7 @@ async function cetakKartu() {
   `;
   setTimeout(() => { 
   renderAllBarcodes(); 
-  setTimeout(() => window.print(), 300); // Naikkan ke 300ms
+  setTimeout(() => window.print(), 300);
 }, 100);
 }
 
@@ -272,7 +314,7 @@ async function cetakSemuaKartu() {
   `;
   setTimeout(() => { 
   renderAllBarcodes(); 
-  setTimeout(() => window.print(), 300); // Naikkan ke 300ms
+  setTimeout(() => window.print(), 300);
 }, 100);
 }
 
@@ -285,6 +327,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Form pengaturan
   document.getElementById('form-pengaturan').addEventListener('submit', simpanPengaturan);
+
+  // Tombol Perpanjang Domain (BARU)
+  document.getElementById('btn-perpanjang-domain').addEventListener('click', perpanjangDomain);
 
   // Backup
   document.getElementById('btn-backup').addEventListener('click', downloadBackup);
