@@ -4,7 +4,6 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { escapeCSV } = require('../utils/csv');
 
 // ================================================================
 // GET /api/anggota — List dengan pagination, search, filter
@@ -42,7 +41,6 @@ router.get('/', (req, res) => {
       LIMIT @limit OFFSET @offset
     `).all({ ...params, limit, offset });
 
-    // Daftar unik untuk dropdown filter
     const kelasList = db.prepare(`
       SELECT DISTINCT kelas FROM anggota
       WHERE kelas IS NOT NULL AND kelas != ''
@@ -63,16 +61,15 @@ router.get('/', (req, res) => {
 
 // ================================================================
 // GET /api/anggota/export — Download CSV semua anggota
-// (harus SEBELUM /:id supaya tidak tabrakan)
 // ================================================================
 router.get('/export', (req, res) => {
   try {
     const rows = db.prepare(`
-      SELECT nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat, status
+      SELECT nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat, status, tanggal_aktif_sampai
       FROM anggota ORDER BY jenis, kelas, nama
     `).all();
 
-    const header = 'nis,nama,jenis,kelas,jenis_kelamin,no_hp,alamat,status';
+    const header = 'nis,nama,jenis,kelas,jenis_kelamin,no_hp,alamat,status,tanggal_aktif_sampai';
     const escapeCSV = (v) => {
       if (v === null || v === undefined) return '';
       const s = String(v);
@@ -81,13 +78,13 @@ router.get('/export', (req, res) => {
 
     const lines = [header];
     for (const r of rows) {
-      lines.push([r.nis, r.nama, r.jenis, r.kelas, r.jenis_kelamin, r.no_hp, r.alamat, r.status]
+      lines.push([r.nis, r.nama, r.jenis, r.kelas, r.jenis_kelamin, r.no_hp, r.alamat, r.status, r.tanggal_aktif_sampai || '']
         .map(escapeCSV).join(','));
     }
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="anggota_${Date.now()}.csv"`);
-    res.send('\uFEFF' + lines.join('\n')); // BOM biar Excel nampilkan UTF-8 dengan benar
+    res.send('\uFEFF' + lines.join('\n'));
   } catch (err) {
     res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
@@ -111,7 +108,7 @@ router.get('/:id', (req, res) => {
 // ================================================================
 router.post('/', (req, res) => {
   try {
-    const { nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat } = req.body;
+    const { nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat, tanggal_aktif_sampai } = req.body;
 
     if (!nis || !String(nis).trim()) return res.status(400).json({ status: 'error', message: 'NIS wajib diisi' });
     if (!nama || !String(nama).trim()) return res.status(400).json({ status: 'error', message: 'Nama wajib diisi' });
@@ -120,8 +117,8 @@ router.post('/', (req, res) => {
     if (dup) return res.status(400).json({ status: 'error', message: `NIS "${nis}" sudah terdaftar` });
 
     const info = db.prepare(`
-      INSERT INTO anggota (nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO anggota (nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat, tanggal_aktif_sampai)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       String(nis).trim(),
       String(nama).trim(),
@@ -129,7 +126,8 @@ router.post('/', (req, res) => {
       kelas || null,
       jenis_kelamin || null,
       no_hp || null,
-      alamat || null
+      alamat || null,
+      tanggal_aktif_sampai || null
     );
 
     const created = db.prepare('SELECT * FROM anggota WHERE id = ?').get(info.lastInsertRowid);
@@ -148,7 +146,7 @@ router.put('/:id', (req, res) => {
     const existing = db.prepare('SELECT * FROM anggota WHERE id = ?').get(id);
     if (!existing) return res.status(404).json({ status: 'error', message: 'Anggota tidak ditemukan' });
 
-    const { nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat, status } = req.body;
+    const { nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat, status, tanggal_aktif_sampai } = req.body;
 
     const newNis = (nis !== undefined ? String(nis).trim() : existing.nis);
     if (!newNis) return res.status(400).json({ status: 'error', message: 'NIS wajib diisi' });
@@ -160,6 +158,7 @@ router.put('/:id', (req, res) => {
       UPDATE anggota SET
         nis = ?, nama = ?, jenis = ?, kelas = ?,
         jenis_kelamin = ?, no_hp = ?, alamat = ?, status = ?,
+        tanggal_aktif_sampai = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
@@ -171,6 +170,7 @@ router.put('/:id', (req, res) => {
       no_hp ?? existing.no_hp,
       alamat ?? existing.alamat,
       status ?? existing.status,
+      tanggal_aktif_sampai !== undefined ? (tanggal_aktif_sampai || null) : existing.tanggal_aktif_sampai,
       id
     );
 
@@ -190,7 +190,6 @@ router.delete('/:id', (req, res) => {
     const existing = db.prepare('SELECT * FROM anggota WHERE id = ?').get(id);
     if (!existing) return res.status(404).json({ status: 'error', message: 'Anggota tidak ditemukan' });
 
-    // Cek apakah masih ada peminjaman aktif
     const aktif = db.prepare(`
       SELECT COUNT(*) as n FROM peminjaman
       WHERE anggota_id = ? AND status IN ('dipinjam', 'sebagian')
@@ -211,8 +210,7 @@ router.delete('/:id', (req, res) => {
 });
 
 // ================================================================
-// POST /api/anggota/import — Import massal dari CSV (array JSON)
-// Body: { rows: [ {nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat}, ... ] }
+// POST /api/anggota/import — Import massal dari CSV
 // ================================================================
 router.post('/import', (req, res) => {
   try {
@@ -225,14 +223,13 @@ router.post('/import', (req, res) => {
     }
 
     const insert = db.prepare(`
-      INSERT INTO anggota (nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat)
-      VALUES (@nis, @nama, @jenis, @kelas, @jenis_kelamin, @no_hp, @alamat)
+      INSERT INTO anggota (nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat, tanggal_aktif_sampai)
+      VALUES (@nis, @nama, @jenis, @kelas, @jenis_kelamin, @no_hp, @alamat, @tanggal_aktif_sampai)
     `);
     const check = db.prepare('SELECT id FROM anggota WHERE nis = ?');
 
     const hasil = { sukses: 0, duplikat: 0, gagal: 0, errors: [] };
 
-    // Transaction = kunci performa untuk ribuan baris
     const insertMany = db.transaction((data) => {
       data.forEach((r, idx) => {
         const nis  = (r.nis  || '').toString().trim();
@@ -255,7 +252,8 @@ router.post('/import', (req, res) => {
             kelas: r.kelas || null,
             jenis_kelamin: r.jenis_kelamin || null,
             no_hp: r.no_hp || null,
-            alamat: r.alamat || null
+            alamat: r.alamat || null,
+            tanggal_aktif_sampai: r.tanggal_aktif_sampai || null
           });
           hasil.sukses++;
         } catch (e) {

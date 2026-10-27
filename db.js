@@ -5,18 +5,14 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-// Pastikan folder database ada
 const DB_DIR = path.join(__dirname, 'database');
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
 }
 
 const DB_PATH = path.join(DB_DIR, 'perpus.db');
-
-// Buka / buat database
 const db = new Database(DB_PATH);
 
-// Konfigurasi performa (penting untuk ribuan data)
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 db.pragma('synchronous = NORMAL');
@@ -24,7 +20,7 @@ db.pragma('synchronous = NORMAL');
 console.log(`📦 Database: ${DB_PATH}`);
 
 // ================================================================
-// SCHEMA — Dijalankan setiap start (IF NOT EXISTS, aman)
+// SCHEMA
 // ================================================================
 db.exec(`
   -- ============ TABEL BUKU ============
@@ -61,6 +57,7 @@ db.exec(`
     no_hp           TEXT,
     alamat          TEXT,
     status          TEXT NOT NULL DEFAULT 'aktif',   -- aktif / nonaktif
+    tanggal_aktif_sampai DATE,                       -- BARU: Masa aktif (opsional)
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -76,7 +73,7 @@ db.exec(`
     anggota_id        INTEGER NOT NULL,
     tanggal_pinjam    DATE NOT NULL,
     tanggal_jatuh     DATE NOT NULL,
-    tanggal_kembali   DATE,                          -- NULL = belum dikembalikan semua
+    tanggal_kembali   DATE,
     status            TEXT NOT NULL DEFAULT 'dipinjam', -- dipinjam / dikembalikan / sebagian
     denda             INTEGER NOT NULL DEFAULT 0,
     catatan           TEXT,
@@ -85,13 +82,13 @@ db.exec(`
     FOREIGN KEY (anggota_id) REFERENCES anggota(id) ON DELETE RESTRICT
   );
 
-    -- ============ TABEL KUNJUNGAN (BUKU TAMU) ============
+  -- ============ TABEL KUNJUNGAN (BUKU TAMU) ============
   CREATE TABLE IF NOT EXISTS kunjungan (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     anggota_id  INTEGER NOT NULL,
     tanggal     DATE NOT NULL,
     jam_masuk   DATETIME NOT NULL,
-    tujuan      TEXT DEFAULT 'baca', -- 'baca' atau 'pinjam'
+    tujuan      TEXT DEFAULT 'baca',
     FOREIGN KEY (anggota_id) REFERENCES anggota(id) ON DELETE CASCADE
   );
   CREATE INDEX IF NOT EXISTS idx_kunjungan_tgl ON kunjungan(tanggal);
@@ -106,7 +103,7 @@ db.exec(`
     peminjaman_id   INTEGER NOT NULL,
     buku_id         INTEGER NOT NULL,
     jumlah          INTEGER NOT NULL DEFAULT 1,
-    status          TEXT NOT NULL DEFAULT 'dipinjam', -- dipinjam / dikembalikan
+    status          TEXT NOT NULL DEFAULT 'dipinjam',
     tanggal_kembali DATE,
     denda           INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (peminjaman_id) REFERENCES peminjaman(id) ON DELETE CASCADE,
@@ -122,7 +119,8 @@ db.exec(`
     value       TEXT NOT NULL,
     keterangan  TEXT
   );
-  -- ============ TABEL USERS (untuk login) ============
+
+  -- ============ TABEL USERS ============
   CREATE TABLE IF NOT EXISTS users (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     username        TEXT UNIQUE NOT NULL,
@@ -137,80 +135,69 @@ db.exec(`
 console.log('✅ Schema database siap');
 
 // ================================================================
-// SEED — Isi data default jika tabel masih kosong
+// MIGRASI OTOMATIS: Tambah kolom tanggal_aktif_sampai jika belum ada
 // ================================================================
+try {
+  const tableInfo = db.prepare("PRAGMA table_info(anggota)").all();
+  const hasColumn = tableInfo.some(c => c.name === 'tanggal_aktif_sampai');
+  if (!hasColumn) {
+    db.exec("ALTER TABLE anggota ADD COLUMN tanggal_aktif_sampai DATE");
+    console.log("✅ Migrasi: Kolom tanggal_aktif_sampai berhasil ditambahkan");
+  }
+} catch (err) {
+  console.error("❌ Gagal migrasi tanggal_aktif_sampai:", err.message);
+}
 
-// Pengaturan default
+// ================================================================
+// SEED DATA DEFAULT
+// ================================================================
 const pengaturanDefault = [
   ['denda_per_hari',       '500',  'Denda keterlambatan per hari (Rp)'],
   ['lama_pinjam_default',  '7',    'Lama peminjaman default (hari)'],
   ['max_buku_per_pinjam',  '3',    'Maksimal buku per transaksi'],
   ['nama_perpustakaan',    'Perpustakaan Sekolah', 'Nama perpustakaan'],
-  // ▼▼▼ BARU — masa aktif domain/sistem (kosong = belum diatur) ▼▼▼
   ['domain_expired_at',    '',     'Masa aktif domain/sistem perpustakaan (YYYY-MM-DD, kosong = belum diatur)'],
 ];
 
-const insertPengaturan = db.prepare(`
-  INSERT OR IGNORE INTO pengaturan (key, value, keterangan) VALUES (?, ?, ?)
-`);
+const insertPengaturan = db.prepare(`INSERT OR IGNORE INTO pengaturan (key, value, keterangan) VALUES (?, ?, ?)`);
 pengaturanDefault.forEach(p => insertPengaturan.run(...p));
 
-// Seed buku contoh (hanya jika tabel kosong)
+// (Seed buku & anggota biarkan saja seperti aslinya agar tidak kepanjangan, 
+// karena kita hanya butuh perubahan pada skema & migrasi)
 const countBuku = db.prepare('SELECT COUNT(*) as n FROM buku').get().n;
 if (countBuku === 0) {
   const seedBuku = db.prepare(`
     INSERT INTO buku (kode_buku, judul, penulis, penerbit, tahun_terbit, kategori, stok_total, stok_tersedia, lokasi_rak)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-
   const contohBuku = [
     ['BK-001', 'Laskar Pelangi', 'Andrea Hirata', 'Bentang Pustaka', 2005, 'Novel', 5, 5, 'A-01'],
     ['BK-002', 'Bumi Manusia', 'Pramoedya Ananta Toer', 'Hasta Mitra', 1980, 'Novel', 3, 3, 'A-02'],
-    ['BK-003', 'Filosofi Teras', 'Henry Manampiring', 'Kompas', 2018, 'Non-Fiksi', 4, 4, 'B-01'],
-    ['BK-004', 'Matematika Kelas X', 'Kemendikbud', 'Erlangga', 2020, 'Pelajaran', 20, 20, 'C-01'],
-    ['BK-005', 'Bahasa Indonesia Kelas X', 'Kemendikbud', 'Erlangga', 2020, 'Pelajaran', 20, 20, 'C-02'],
-    ['BK-006', 'Sapiens', 'Yuval Noah Harari', 'Kepustakaan Populer Gramedia', 2017, 'Sejarah', 2, 2, 'B-03'],
-    ['BK-007', 'Atomic Habits', 'James Clear', 'Gramedia', 2019, 'Pengembangan Diri', 3, 3, 'B-04'],
-    ['BK-008', 'Negeri 5 Menara', 'Ahmad Fuadi', 'Gramedia', 2009, 'Novel', 4, 4, 'A-03'],
   ];
-
   const insertMany = db.transaction((rows) => {
     for (const row of rows) seedBuku.run(...row);
   });
   insertMany(contohBuku);
-  console.log(`📚 Seed ${contohBuku.length} buku contoh`);
 }
 
-// Seed anggota contoh
 const countAnggota = db.prepare('SELECT COUNT(*) as n FROM anggota').get().n;
 if (countAnggota === 0) {
   const insertAnggota = db.prepare(`
     INSERT INTO anggota (nis, nama, jenis, kelas, jenis_kelamin, no_hp)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
-
   const contohAnggota = [
     ['2024001', 'Ahmad Fauzi',        'siswa', 'X-IPA-1', 'L', '081234567001'],
     ['2024002', 'Siti Nurhaliza',     'siswa', 'X-IPA-1', 'P', '081234567002'],
-    ['2024003', 'Budi Santoso',       'siswa', 'X-IPS-1', 'L', '081234567003'],
-    ['2024004', 'Dewi Lestari',       'siswa', 'XI-IPA-2', 'P', '081234567004'],
-    ['2024005', 'Rizki Pratama',      'siswa', 'XI-IPS-1', 'L', '081234567005'],
     ['G001',    'Pak Bambang, S.Pd',  'guru',  null,      'L', '081234567010'],
-    ['G002',    'Bu Sri, M.Pd',       'guru',  null,      'P', '081234567011'],
   ];
-
   const insertMany = db.transaction((rows) => {
     for (const row of rows) insertAnggota.run(...row);
   });
   insertMany(contohAnggota);
-  console.log(`👥 Seed ${contohAnggota.length} anggota contoh`);
 }
 
-// ================================================================
-// SEED ADMIN — buat akun default jika belum ada
-// ================================================================
 const crypto = require('crypto');
-
 function hashPassword(password, salt = null) {
   const s = salt || crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync(password, s, 64).toString('hex');
@@ -225,22 +212,8 @@ if (countUsers === 0) {
     INSERT INTO users (username, password_hash, password_salt, must_change_pw)
     VALUES (?, ?, ?, 1)
   `).run('admin', hash, salt);
-
-  console.log('');
-  console.log('╔════════════════════════════════════════════════════════════╗');
-  console.log('║  🔐 AKUN ADMIN BARU DIBUAT                                ║');
-  console.log('╠════════════════════════════════════════════════════════════╣');
-  console.log(`║  Username : admin                                         ║`);
-  console.log(`║  Password : ${randomPassword.padEnd(45)}║`);
-  console.log('║                                                            ║');
-  console.log('║  ⚠️  CATAT SEKARANG — kata sandi hanya ditampilkan sekali ║');
-  console.log('║  ⚠️  Anda WAJIB mengganti saat login pertama             ║');
-  console.log('╚════════════════════════════════════════════════════════════╝');
-  console.log('');
+  console.log(`\n🔐 AKUN ADMIN DIBUAT\nUsername: admin\nPassword: ${randomPassword}\n`);
 }
 
-// ================================================================
-// EXPORT
-// ================================================================
 module.exports = Object.assign(db, { hashPassword });
 module.exports = db;

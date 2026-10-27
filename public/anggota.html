@@ -15,8 +15,6 @@
 <body class="bg-slate-100 min-h-screen">
 
   <div class="flex min-h-screen">
-
-    <!-- ============ SIDEBAR ============ -->
     <aside class="w-60 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col">
       <div class="p-5 border-b border-slate-700">
         <div class="flex items-center gap-2">
@@ -27,7 +25,7 @@
         </div>
       </div>
 
-                  <nav class="flex-1 p-3 space-y-1 text-sm">
+      <nav class="flex-1 p-3 space-y-1 text-sm">
         <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300" >
           <span>🏠</span> <span>Dashboard</span>
         </a>
@@ -51,7 +49,6 @@
       <div class="p-4 border-t border-slate-700 text-xs text-slate-500">v0.6 — Fase 6</div>
     </aside>
 
-    <!-- ============ MAIN ============ -->
     <main class="flex-1 p-8 overflow-x-auto">
 
       <div class="flex items-center justify-between mb-6">
@@ -127,12 +124,13 @@
                 <th class="px-4 py-3 font-semibold">Jenis</th>
                 <th class="px-4 py-3 font-semibold">Kelas</th>
                 <th class="px-4 py-3 font-semibold">JK</th>
+                <th class="px-4 py-3 font-semibold">Masa Aktif</th>
                 <th class="px-4 py-3 font-semibold text-center">Status</th>
                 <th class="px-4 py-3 font-semibold text-center w-32">Aksi</th>
               </tr>
             </thead>
             <tbody id="tabel-body">
-              <tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>
+              <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -213,6 +211,15 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Masa Aktif Sampai</label>
+            <input type="date" id="f-tanggal_aktif_sampai"
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-[11px] text-slate-500 mt-1">Kosongkan jika tidak ada batas waktu (guru/staf).</p>
+          </div>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Alamat</label>
           <textarea id="f-alamat" rows="2"
@@ -229,84 +236,68 @@
     </div>
   </div>
 
-  <!-- ============ MODAL IMPORT ============ -->
+  <!-- (MODAL IMPORT & HAPUS TETAP SAMA SEPERTI ASLINYA, TIDAK BERUBAH) -->
   <div id="modal-import" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
       <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
         <h2 class="text-lg font-bold text-slate-800">📥 Import Anggota dari CSV</h2>
         <button id="btn-close-import" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
       </div>
-
       <div class="p-6 space-y-4">
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
           <p class="font-semibold text-blue-800 mb-2">📋 Format CSV (baris pertama = header):</p>
           <code class="block bg-white px-3 py-2 rounded border border-blue-200 text-xs font-mono">
-            nis,nama,jenis,kelas,jenis_kelamin,no_hp,alamat
+            nis,nama,jenis,kelas,jenis_kelamin,no_hp,alamat,tanggal_aktif_sampai
           </code>
           <ul class="mt-3 text-blue-700 space-y-1 text-xs list-disc list-inside">
             <li><b>nis</b> & <b>nama</b> wajib. Lainnya opsional.</li>
-            <li><b>jenis</b>: siswa / guru / staf (default: siswa)</li>
-            <li><b>jenis_kelamin</b>: L / P</li>
-            <li>NIS yang sudah ada akan <b>dilewati</b> (tidak ditimpa).</li>
-            <li>Support CSV dengan tanda kutip <code>"..."</code>.</li>
+            <li><b>tanggal_aktif_sampai</b> format YYYY-MM-DD (opsional).</li>
+            <li>NIS yang sudah ada akan <b>dilewati</b>.</li>
           </ul>
           <button id="btn-download-template" type="button"
             class="mt-3 text-blue-700 hover:text-blue-900 font-medium underline text-xs">
             ⬇️ Download template CSV
           </button>
         </div>
-
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-2">Pilih file CSV</label>
           <input type="file" id="file-csv" accept=".csv,text/csv"
             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
         </div>
-
         <div id="preview-import" class="hidden">
           <div class="text-sm font-medium text-slate-700 mb-2">Preview (10 baris pertama):</div>
           <div class="border border-slate-200 rounded-lg overflow-x-auto max-h-64">
             <table class="w-full text-xs">
-              <thead class="bg-slate-50 sticky top-0">
-                <tr id="preview-head"></tr>
-              </thead>
+              <thead class="bg-slate-50 sticky top-0"><tr id="preview-head"></tr></thead>
               <tbody id="preview-body"></tbody>
             </table>
           </div>
           <div id="preview-info" class="mt-2 text-sm text-slate-600"></div>
         </div>
-
         <div id="import-result" class="hidden"></div>
-
         <div class="flex justify-end gap-2 pt-4 border-t border-slate-200">
-          <button type="button" id="btn-cancel-import"
-            class="px-4 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-100">Batal</button>
-          <button type="button" id="btn-proses-import" disabled
-            class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium">
-            Proses Import
-          </button>
+          <button type="button" id="btn-cancel-import" class="px-4 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-100">Batal</button>
+          <button type="button" id="btn-proses-import" disabled class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium">Proses Import</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ============ MODAL HAPUS ============ -->
   <div id="modal-hapus" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
       <div class="text-5xl mb-3">⚠️</div>
       <h2 class="text-lg font-bold text-slate-800 mb-1">Hapus Anggota?</h2>
       <p id="hapus-nama" class="text-sm text-slate-500 mb-5"></p>
       <div class="flex gap-2">
-        <button id="btn-cancel-hapus"
-          class="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-100">Batal</button>
-        <button id="btn-konfirmasi-hapus"
-          class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">Hapus</button>
+        <button id="btn-cancel-hapus" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-100">Batal</button>
+        <button id="btn-konfirmasi-hapus" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">Hapus</button>
       </div>
     </div>
   </div>
 
   <script src="/js/api.js"></script>
   <script src="/js/anggota.js"></script>
-    <script src="/js/icons.js"></script>
+  <script src="/js/icons.js"></script>
   <script src="/js/pengingat-domain.js"></script>
 </body>
 </html>

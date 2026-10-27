@@ -13,48 +13,35 @@ const peminjamanRouter = require('./routes/peminjaman');
 const laporanRouter    = require('./routes/laporan');
 const pengaturanRouter = require('./routes/pengaturan');
 const scanRouter       = require('./routes/scan');
-const pengingatRouter  = require('./routes/pengingat'); // ← BARU
+const pengingatRouter  = require('./routes/pengingat');
 
 const app = express();
 
-// ===== Konfigurasi host/port =====
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 
-// Trust proxy (untuk IP di balik reverse proxy)
 app.set('trust proxy', false);
 
-// ===== Middleware dasar =====
-// TIDAK pakai cors() terbuka — same-origin only
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ===== File statis (HTML login & assets publik) =====
-// Login page & asset (css, js, img, vendor) BISA diakses tanpa auth
 const PUBLIC_WHITELIST = ['/login.html', '/css/', '/js/', '/img/', '/vendor/'];
 app.use((req, res, next) => {
   if (req.path === '/' || req.path.endsWith('.html')) return next();
   return express.static(path.join(__dirname, 'public'))(req, res, next);
 });
 
-// ===== CSRF check untuk semua non-GET =====
 app.use(auth.checkCSRF);
-
-// ===== Auth routes (tidak perlu login) =====
 app.use('/api/auth', authRouter);
 
-// ===== Auth middleware untuk semua rute lain =====
 app.use((req, res, next) => {
-  // Izinkan login page & asset publik
   if (req.path === '/login.html') return next();
   if (PUBLIC_WHITELIST.some(p => req.path.startsWith(p))) return next();
   return auth.requireAuth(req, res, next);
 });
 
-// ===== Serve HTML (sudah tidak pakai runtime patching) =====
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ===== API Routes =====
 app.get('/api/ping', (req, res) => {
   res.json({ status: 'ok', message: 'Server perpus jalan' });
 });
@@ -65,19 +52,48 @@ app.use('/api/peminjaman', peminjamanRouter);
 app.use('/api/laporan',    laporanRouter);
 app.use('/api/pengaturan', pengaturanRouter);
 app.use('/api/scan',       scanRouter);
-app.use('/api/pengingat',  pengingatRouter); // ← BARU
+app.use('/api/pengingat',  pengingatRouter);
 
-// ===== 404 & Error handler =====
 app.use('/api', (req, res) => res.status(404).json({ error: 'Endpoint tidak ditemukan' }));
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.message, err.stack);
   res.status(500).json({ error: 'Terjadi kesalahan pada server' });
 });
 
-// ===== Start =====
+// ================================================================
+// CRON JOB — Auto Nonaktif Anggota (Masa Aktif Siswa)
+// ================================================================
+function getTodayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function checkMasaAktifAnggota() {
+  try {
+    const today = getTodayStr();
+    const info = db.prepare(`
+      UPDATE anggota
+      SET status = 'nonaktif', updated_at = CURRENT_TIMESTAMP
+      WHERE status = 'aktif'
+        AND tanggal_aktif_sampai IS NOT NULL
+        AND tanggal_aktif_sampai != ''
+        AND tanggal_aktif_sampai < ?
+    `).run(today);
+    
+    if (info.changes > 0) {
+      console.log(`⏰ [CRON] ${info.changes} anggota dinonaktifkan otomatis karena masa aktif habis.`);
+    }
+  } catch (err) {
+    console.error('❌ [CRON] Gagal update masa aktif:', err.message);
+  }
+}
+
+// Jalankan saat start, lalu ulangi setiap 1 jam
+checkMasaAktifAnggota();
+setInterval(checkMasaAktifAnggota, 60 * 60 * 1000);
+
 app.listen(PORT, HOST, () => {
   console.log('====================================');
   console.log(`✅ Server jalan di http://${HOST}:${PORT}`);
-  console.log(`🌐 HOST=${HOST} PORT=${PORT}`);
   console.log('====================================');
 });

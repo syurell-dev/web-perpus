@@ -22,7 +22,7 @@ const state = {
 // ================================================================
 async function loadAnggota() {
   const tbody = document.getElementById('tabel-body');
-  tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
 
   try {
     const res = await apiGet('/anggota', {
@@ -34,7 +34,7 @@ async function loadAnggota() {
     renderPagination(res.pagination);
     renderKelasDropdown(res.kelas_list);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
   }
 }
 
@@ -44,7 +44,7 @@ async function loadAnggota() {
 function renderTabel(list) {
   const tbody = document.getElementById('tabel-body');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">📭 Tidak ada data anggota</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">📭 Tidak ada data anggota</td></tr>`;
     return;
   }
 
@@ -61,6 +61,21 @@ function renderTabel(list) {
       ? '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">Aktif</span>'
       : '<span class="px-2 py-0.5 rounded text-xs bg-slate-200 text-slate-600">Nonaktif</span>';
 
+    // LOGIKA BADGE MASA AKTIF
+    const tglAktif = a.tanggal_aktif_sampai ? a.tanggal_aktif_sampai : '-';
+    let expBadge = '';
+    if (a.tanggal_aktif_sampai) {
+      const today = new Date();
+      const exp = new Date(a.tanggal_aktif_sampai);
+      const diffDays = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 0) {
+        expBadge = '<span class="text-[10px] text-red-600 block font-bold">(Expired)</span>';
+      } else if (diffDays <= 30) {
+        expBadge = `<span class="text-[10px] text-amber-600 block font-bold">(${diffDays} hari lagi)</span>`;
+      }
+    }
+
     return `
       <tr class="border-b border-slate-100 hover:bg-slate-50 ${a.status !== 'aktif' ? 'opacity-60' : ''}">
         <td class="px-4 py-3 text-slate-500">${startNo + i}</td>
@@ -69,15 +84,12 @@ function renderTabel(list) {
         <td class="px-4 py-3">${jenisBadge}</td>
         <td class="px-4 py-3 text-slate-600">${escapeHtml(a.kelas) || '-'}</td>
         <td class="px-4 py-3 text-slate-600">${a.jenis_kelamin || '-'}</td>
+        <td class="px-4 py-3 text-slate-600 text-xs">${tglAktif} ${expBadge}</td>
         <td class="px-4 py-3 text-center">${statusBadge}</td>
         <td class="px-4 py-3">
           <div class="flex gap-1 justify-center">
-<button data-action="editAnggota" data-id="${a.id}" title="Edit" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
-  ✏️
-</button>
-<button data-action="konfirmasiHapus" data-id="${a.id}" data-str="${escapeHtml(a.nama)}" title="Hapus" class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">
-  🗑️
-</button>
+            <button data-action="editAnggota" data-id="${a.id}" title="Edit" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">✏️</button>
+            <button data-action="konfirmasiHapus" data-id="${a.id}" data-str="${escapeHtml(a.nama)}" title="Hapus" class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">🗑️</button>
           </div>
         </td>
       </tr>
@@ -145,6 +157,7 @@ function openModal(mode = 'tambah', data = null) {
     document.getElementById('f-no_hp').value = data.no_hp || '';
     document.getElementById('f-alamat').value = data.alamat || '';
     document.getElementById('f-status').value = data.status || 'aktif';
+    document.getElementById('f-tanggal_aktif_sampai').value = data.tanggal_aktif_sampai || '';
   } else {
     document.getElementById('modal-title').textContent = 'Tambah Anggota';
   }
@@ -165,7 +178,8 @@ async function submitForm(e) {
     jenis_kelamin: document.getElementById('f-jenis_kelamin').value,
     no_hp:         document.getElementById('f-no_hp').value.trim(),
     alamat:        document.getElementById('f-alamat').value.trim(),
-    status:        document.getElementById('f-status').value
+    status:        document.getElementById('f-status').value,
+    tanggal_aktif_sampai: document.getElementById('f-tanggal_aktif_sampai').value || null
   };
 
   const btn = document.getElementById('btn-submit');
@@ -376,10 +390,10 @@ async function prosesImport() {
 
 function downloadTemplate() {
   const csv = [
-    'nis,nama,jenis,kelas,jenis_kelamin,no_hp,alamat',
-    '2025001,Ahmad Contoh,siswa,X-IPA-1,L,081234567001,Jl. Merdeka No. 1',
-    '2025002,Siti Contoh,siswa,X-IPA-1,P,081234567002,Jl. Sudirman No. 2',
-    'G010,Bapak Guru,guru,,L,081234567010,'
+    'nis,nama,jenis,kelas,jenis_kelamin,no_hp,alamat,tanggal_aktif_sampai',
+    '2025001,Ahmad Contoh,siswa,X-IPA-1,L,081234567001,Jl. Merdeka No. 1,2027-06-30',
+    '2025002,Siti Contoh,siswa,X-IPA-1,P,081234567002,Jl. Sudirman No. 2,2026-12-31',
+    'G010,Bapak Guru,guru,,L,081234567010,,'
   ].join('\n');
 
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
@@ -469,14 +483,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Event delegation untuk tombol aksi
-document.getElementById('tabel-body').addEventListener('click', (e) => {
-  const btnEdit = e.target.closest('.btn-edit');
-  if (btnEdit) return editAnggota(btnEdit.dataset.id);
+  // Event delegation untuk tombol aksi tabel
+  document.getElementById('tabel-body').addEventListener('click', (e) => {
+    const btnEdit = e.target.closest('[data-action="editAnggota"]');
+    if (btnEdit) return editAnggota(btnEdit.dataset.id);
 
-  const btnHapus = e.target.closest('.btn-hapus');
-  if (btnHapus) return konfirmasiHapus(btnHapus.dataset.id, btnHapus.dataset.nama);
-});
+    const btnHapus = e.target.closest('[data-action="konfirmasiHapus"]');
+    if (btnHapus) return konfirmasiHapus(btnHapus.dataset.id, btnHapus.dataset.str);
+    
+    const btnPage = e.target.closest('[data-action="gotoPage"]');
+    if (btnPage) return gotoPage(Number(btnPage.dataset.id));
+  });
 
   loadAnggota();
 });
