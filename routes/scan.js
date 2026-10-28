@@ -13,12 +13,10 @@ function addDays(dateStr, days) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-// GET /api/scan/lookup/:kode — Deteksi otomatis buku/anggota
 router.get('/lookup/:kode', (req, res) => {
   try {
     const rawKode = (req.params.kode || '').trim();
     const kode = rawKode.toUpperCase();
-
     if (!kode) return res.status(400).json({ status: 'error', message: 'Kode kosong' });
 
     let buku = db.prepare('SELECT * FROM buku WHERE UPPER(kode_buku) = ?').get(kode);
@@ -41,15 +39,14 @@ router.get('/lookup/:kode', (req, res) => {
 
     res.status(404).json({ status: 'error', message: 'Kode tidak dikenali: ' + rawKode });
   } catch (err) {
-    console.error('Scan lookup error:', err);
     res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 });
 
-// POST /api/scan/proses — Proses Peminjaman, Pengembalian, & Perpanjangan
 router.post('/proses', (req, res) => {
   try {
-        const { anggota_id, buku_list, force_return } = req.body;
+    // TANGKAP PARAMETER is_paket
+    const { anggota_id, buku_list, force_return, is_paket } = req.body;
     if (!anggota_id || !Array.isArray(buku_list) || !buku_list.length) {
       return res.status(400).json({ status: 'error', message: 'Data tidak lengkap' });
     }
@@ -59,17 +56,14 @@ router.post('/proses', (req, res) => {
 
     const today = todayStr();
     const lamaPinjam = parseInt((db.prepare('SELECT value FROM pengaturan WHERE key=?').get('lama_pinjam_default') || {}).value || '3', 10);
-    const dendaPerHari = parseInt((db.prepare('SELECT value FROM pengaturan WHERE key=?').get('denda_per_hari') || {}).value || '500', 10);
 
-    // CEK SANKSI DI AWAL
     if (anggota.banned_until && anggota.banned_until >= today) {
       return res.status(400).json({ status: 'error', message: `Siswa sedang dalam masa sanksi hingga ${anggota.banned_until}. Tidak bisa meminjam buku.` });
     }
 
     const items = [];
     for (const item of buku_list) {
-      
-            const detail = db.prepare(`
+      const detail = db.prepare(`
         SELECT pd.id AS detail_id, pd.jumlah, p.id AS peminjaman_id, p.tanggal_jatuh
         FROM peminjaman_detail pd
         JOIN peminjaman p ON p.id = pd.peminjaman_id
@@ -79,21 +73,18 @@ router.post('/proses', (req, res) => {
 
       if (detail) {
         if (today === detail.tanggal_jatuh && !force_return) {
-          // TEPAT DI HARI JATUH TEMPO & TIDAK PAKSA KEMBALI = PERPANJANG
           items.push({ action: 'perpanjang', detail_id: detail.detail_id, peminjaman_id: detail.peminjaman_id, buku_id: item.buku_id, jumlah: detail.jumlah });
         } else {
-          // KEMBALIKAN BUKU (Lebih awal, terlambat, ATAU karena mode paksa kembali)
           items.push({ action: 'kembali', detail_id: detail.detail_id, peminjaman_id: detail.peminjaman_id, buku_id: item.buku_id, jumlah: item.jumlah, is_late: today > detail.tanggal_jatuh });
         }
       } else {
-        // PINJAM BUKU BARU
         const otherBorrow = db.prepare(`SELECT id FROM peminjaman_detail WHERE buku_id = ? AND status = 'dipinjam'`).get(item.buku_id);
         if (otherBorrow) {
           return res.status(400).json({ status: 'error', message: `Buku sedang dipinjam oleh orang lain.` });
         }
         items.push({ action: 'pinjam', buku_id: item.buku_id, jumlah: item.jumlah });
       }
-    } // ◄◄◄ INI KURUNG PENUTUP FOR LOOP YANG HILANG
+    }
 
     const perpanjangItems = items.filter(i => i.action === 'perpanjang');
     const kembaliItems = items.filter(i => i.action === 'kembali');
@@ -110,7 +101,6 @@ router.post('/proses', (req, res) => {
     const doProcess = db.transaction(() => {
       const hasil = { pengembalian: [], peminjaman: null, perpanjangan: [], sanksi: null };
 
-      // 1. PROSES PERPANJANGAN (+3 HARI)
       for (const item of perpanjangItems) {
         const newDueDate = addDays(today, lamaPinjam);
         db.prepare(`UPDATE peminjaman SET tanggal_jatuh = ?, updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(newDueDate, item.peminjaman_id);
@@ -118,20 +108,17 @@ router.post('/proses', (req, res) => {
         hasil.perpanjangan.push({ ...buku, tanggal_jatuh_baru: newDueDate });
       }
 
-      // 2. PROSES PENGEMBALIAN & SANKSI
       if (kembaliItems.length) {
         const updDetail = db.prepare(`UPDATE peminjaman_detail SET status='dikembalikan', tanggal_kembali=?, denda=? WHERE id=?`);
         const updStok = db.prepare(`UPDATE buku SET stok_tersedia = stok_tersedia + ?, updated_at=CURRENT_TIMESTAMP WHERE id=?`);
         let kenaSanksi = false;
 
         for (const item of kembaliItems) {
-          // Denda Rp0 (bisa disesuaikan lewat setting)
           const denda = 0; 
           updDetail.run(today, denda, item.detail_id);
           updStok.run(item.jumlah, item.buku_id);
           const buku = db.prepare('SELECT judul, kode_buku FROM buku WHERE id = ?').get(item.buku_id);
           hasil.pengembalian.push({ ...buku, denda, hari_terlambat: 0 });
-          
           if (item.is_late) kenaSanksi = true;
         }
 
@@ -153,15 +140,16 @@ router.post('/proses', (req, res) => {
         }
       }
 
-      // 3. PROSES PEMINJAMAN BARU
       if (pinjamItems.length) {
-        // Cek ulang ban jika sebelumnya ada pengembalian terlambat di transaksi yang sama
         const ag = db.prepare('SELECT banned_until FROM anggota WHERE id = ?').get(anggota_id);
         if (ag && ag.banned_until && ag.banned_until >= today) {
           throw new Error(`Tidak bisa meminjam buku baru karena baru saja mendapat sanksi hingga ${ag.banned_until}.`);
         }
 
-        const tglJatuhStr = addDays(today, lamaPinjam);
+        // LOGIKA PAKET: Jika is_paket true, set tanggal sejauh mungkin
+        const tglJatuhStr = is_paket ? '2099-12-31' : addDays(today, lamaPinjam);
+        const catatan = is_paket ? 'Paket Tahunan' : 'Auto-scan';
+        
         const ymd = today.replace(/-/g, '');
         const prefix = `PJ-${ymd}-`;
         const last = db.prepare(`SELECT kode_pinjam FROM peminjaman WHERE kode_pinjam LIKE ? ORDER BY id DESC LIMIT 1`).get(prefix + '%');
@@ -170,8 +158,8 @@ router.post('/proses', (req, res) => {
 
         const info = db.prepare(`
           INSERT INTO peminjaman (kode_pinjam, anggota_id, tanggal_pinjam, tanggal_jatuh, status, catatan)
-          VALUES (?, ?, ?, ?, 'dipinjam', 'Auto-scan')
-        `).run(kodePinjam, anggota_id, today, tglJatuhStr);
+          VALUES (?, ?, ?, ?, 'dipinjam', ?)
+        `).run(kodePinjam, anggota_id, today, tglJatuhStr, catatan);
 
         const pid = info.lastInsertRowid;
         const insDetail = db.prepare(`INSERT INTO peminjaman_detail (peminjaman_id, buku_id, jumlah, status) VALUES (?, ?, ?, 'dipinjam')`);
@@ -206,7 +194,6 @@ router.post('/proses', (req, res) => {
   }
 });
 
-// POST /api/scan/tamu — Catat Masuk (Tanpa Scan Keluar)
 router.post('/tamu', (req, res) => {
   try {
     const { anggota_id, tujuan = 'baca' } = req.body;
@@ -228,7 +215,6 @@ router.post('/tamu', (req, res) => {
       res.json({ status: 'ok', tipe: 'masuk', tujuan, anggota, waktu: now.split(' ')[1] });
     }
   } catch (err) {
-    console.error('[scan/tamu]', err.message);
     res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
   }
 });

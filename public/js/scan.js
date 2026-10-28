@@ -2,11 +2,7 @@
 // scan.js — Final (match dengan scan.html wrapper)
 // ================================================================
 
-const state = {
-  bukuList: [],
-  processing: false,
-  forceReturn: false
-};
+  const state = { bukuList: [], processing: false, forceReturn: false, isPaket: false };
 
 // ================================================================
 // FULLSCREEN + EXIT
@@ -153,10 +149,11 @@ async function prosesSemua(anggota, tujuan = 'pinjam') {
     showStatus('Memproses...', anggota.nama, 'info', '⏳');
     addLog('👤 ' + escapeHtml(anggota.nama) + ' (' + anggota.nis + ') — proses ' + state.bukuList.length + ' buku', 'info');
 
-    const payload = {
+        const payload = {
       anggota_id: anggota.id,
       buku_list: state.bukuList.map(b => ({ buku_id: b.id, jumlah: 1 })),
-      force_return: state.forceReturn
+      force_return: state.forceReturn,
+      is_paket: state.isPaket // <--- TAMBAHKAN INI
     };
 
     const res = await apiPost('/scan/proses', payload);
@@ -173,8 +170,14 @@ async function prosesSemua(anggota, tujuan = 'pinjam') {
     // Catat ke Buku Tamu sebagai 'pinjam'
     await apiPost('/scan/tamu', { anggota_id: anggota.id, tujuan: 'pinjam' });
 
-    state.bukuList = [];
-    state.forceReturn = false;
+          state.bukuList = [];
+      state.forceReturn = false;
+      state.isPaket = false;
+      
+      const btnK = document.getElementById('btn-mode-kembalikan');
+      if (btnK) { btnK.style.background = '#fff'; btnK.style.borderColor = '#cbd5e1'; btnK.style.color = '#475569'; }
+      const btnP = document.getElementById('btn-mode-paket');
+      if (btnP) { btnP.style.background = '#f8fafc'; btnP.style.borderColor = '#cbd5e1'; btnP.style.color = '#475569'; }
     
     const toggleUI = document.getElementById('toggle-force-return');
     if (toggleUI) toggleUI.checked = false;
@@ -298,24 +301,44 @@ async function prosesTamu(anggota, tujuan = 'baca') {
 // INIT
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // --- PATCH: Event Listener Toggle Force Return ---
-  const toggleReturn = document.getElementById('toggle-force-return');
-  const labelReturn = document.getElementById('label-force-return');
-  
-  if (toggleReturn && labelReturn) {
-    toggleReturn.addEventListener('change', (e) => {
-      state.forceReturn = e.target.checked;
+    // --- LOGIKA TOMBOL KEMBALIKAN ---
+  const btnKembali = document.getElementById('btn-mode-kembalikan');
+  if (btnKembali) {
+    btnKembali.addEventListener('click', () => {
+      state.forceReturn = !state.forceReturn;
       if (state.forceReturn) {
-        labelReturn.style.background = '#fee2e2';
-        labelReturn.style.color = '#b91c1c';
-        addLog('Mode: Pengembalian Buku aktif', 'warn');
+        btnKembali.style.background = '#fee2e2';
+        btnKembali.style.borderColor = '#fca5a5';
+        btnKembali.style.color = '#b91c1c';
+        addLog('Mode: Pengembalian Buku Aktif', 'warn');
       } else {
-        labelReturn.style.background = '#f1f5f9';
-        labelReturn.style.color = '#475569';
+        btnKembali.style.background = '#fff';
+        btnKembali.style.borderColor = '#cbd5e1';
+        btnKembali.style.color = '#475569';
         addLog('Mode: Normal (Perpanjang Otomatis)', 'info');
       }
     });
   }
+
+  // --- LOGIKA TOMBOL PAKET ---
+  const btnPaket = document.getElementById('btn-mode-paket');
+  if (btnPaket) {
+    btnPaket.addEventListener('click', () => {
+      state.isPaket = !state.isPaket;
+      if (state.isPaket) {
+        btnPaket.style.background = '#dbeafe';
+        btnPaket.style.borderColor = '#93c5fd';
+        btnPaket.style.color = '#1d4ed8';
+        addLog('Mode: Paket Tahunan Aktif', 'warn');
+      } else {
+        btnPaket.style.background = '#f8fafc';
+        btnPaket.style.borderColor = '#cbd5e1';
+        btnPaket.style.color = '#475569';
+        addLog('Mode: Reguler', 'info');
+      }
+    });
+  }
+
   // --- END PATCH ---
   const input = document.getElementById('scan-input');
 

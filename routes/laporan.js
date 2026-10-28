@@ -301,4 +301,40 @@ router.get('/export-kunjungan', (req, res) => {
   }
 });
 
+// ================================================================
+// 4. LAPORAN BUKU PAKET (IJAZAH)
+// ================================================================
+router.get('/paket', (req, res) => {
+  try {
+    // Mengambil data siswa yang setidaknya pernah meminjam buku kategori 'Paket'
+        const rows = db.prepare(`
+      SELECT 
+        a.id AS anggota_id, a.nis, a.nama, a.kelas,
+        SUM(pd.jumlah) AS total_pinjam,
+        SUM(CASE WHEN pd.status = 'dikembalikan' THEN pd.jumlah ELSE 0 END) AS total_kembali,
+        GROUP_CONCAT(CASE WHEN pd.status = 'dipinjam' THEN b.judul || ' (' || pd.jumlah || ' bku)' END, ', ') AS buku_belum_kembali
+      FROM peminjaman_detail pd
+      JOIN peminjaman p ON p.id = pd.peminjaman_id
+      JOIN anggota a ON a.id = p.anggota_id
+      JOIN buku b ON b.id = pd.buku_id
+      WHERE b.kategori = 'Paket'
+      GROUP BY a.id
+      ORDER BY a.kelas ASC, a.nama ASC
+    `).all();
+
+    const data = rows.map(r => {
+      const lengkap = (r.total_kembali >= r.total_pinjam) && r.total_pinjam > 0;
+      return {
+        ...r,
+        status_lengkap: lengkap
+      };
+    });
+
+    res.json({ status: 'ok', data });
+  } catch (err) {
+    console.error('GET /laporan/paket error:', err);
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
+  }
+});
+
 module.exports = router;
