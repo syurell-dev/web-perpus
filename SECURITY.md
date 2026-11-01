@@ -17,7 +17,7 @@ Karena aplikasi ini menangani data sensitif (NIS, Nama Siswa, Riwayat Peminjaman
 
 Sebagai gantinya, silakan laporkan melalui salah satu cara berikut:
 1. Gunakan fitur **Private Vulnerability Reporting** di tab *Security* pada repositori ini.
-2. Hubungi pengembang secara langsung melalui email: **syurell.hartono@gmail.com** *(Ganti dengan email Anda yang sebenarnya)*.
+2. Hubungi pengembang secara langsung melalui email: **syurell.hartono@gmail.com**.
 
 Anda akan menerima balasan dalam waktu 1x24 jam. Jika celah keamanan terbukti valid, patch akan segera dirilis pada pembaruan versi berikutnya.
 
