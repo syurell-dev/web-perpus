@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Siswa - Perpustakaan Digital</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    
+    /* Efek Hover Katalog */
+    .book-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .book-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.2); }
+    
+    /* Scrollbar Halus */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  </style>
+</head>
+<body class="min-h-screen pb-20">
+
+  <!-- Navbar Glassmorphism -->
+  <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+          <i data-lucide="book-open" class="w-4 h-4 text-emerald-600"></i>
+        </div>
+        <span class="font-bold text-slate-800 text-lg tracking-tight">Pustaka Digital</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="hidden md:block text-sm font-medium text-slate-500" id="nav-username">Memuat...</div>
+        <button id="btn-logout" class="text-sm font-semibold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition flex items-center gap-2">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 space-y-8 mt-6">
+    
+    <!-- Hero Banner -->
+    <div class="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-8 md:p-10 text-white shadow-xl relative overflow-hidden">
+      <!-- Dekorasi Background -->
+      <div class="absolute -right-10 -top-10 opacity-20">
+        <i data-lucide="book" class="w-64 h-64"></i>
+      </div>
+      <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <div class="text-3xl md:text-4xl font-extrabold tracking-tight mb-2" style="color: #ffffff !important; -webkit-text-fill-color: #ffffff !important;" id="greeting">Halo!</div>
+          <p class="text-emerald-50 text-sm md:text-base max-w-md">Selamat datang di perpustakaan digital. Baca buku favoritmu di mana saja.</p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 min-w-[160px] text-center">
+          <div class="text-xs text-emerald-100 font-semibold uppercase tracking-wider mb-1">Total Pinjaman</div>
+          <div class="text-4xl font-extrabold" id="stat-total">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Kolom Kiri: Katalog & Pinjaman -->
+      <div class="lg:col-span-2 space-y-8">
+        
+        <!-- Katalog Buku -->
+        <section>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-xl text-slate-800 flex items-center gap-2">
+              <i data-lucide="library" class="w-5 h-5 text-emerald-600"></i> Katalog Buku Digital
+            </h2>
+          </div>
+          <div id="list-digital" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div class="col-span-full py-12 flex flex-col items-center justify-center text-slate-400">
+              <div class="w-8 h-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin mb-3"></div>
+              <span class="text-sm font-medium">Memuat katalog...</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Pinjaman Aktif -->
+        <section>
+          <h2 class="font-bold text-xl text-slate-800 flex items-center gap-2 mb-4">
+            <i data-lucide="bookmark" class="w-5 h-5 text-amber-500"></i> Buku Sedang Dipinjam
+          </h2>
+          <div id="list-pinjaman" class="space-y-3">
+            <div class="py-8 flex flex-col items-center justify-center text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <i data-lucide="inbox" class="w-8 h-8 mb-2 opacity-50"></i>
+              <span class="text-sm font-medium">Memuat data peminjaman...</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Kolom Kanan: Leaderboard -->
+      <div class="space-y-6">
+        <h2 class="font-bold text-xl text-slate-800 flex items-center gap-2">
+          <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i> Peringkat Pembaca
+        </h2>
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+          <div id="list-leaderboard" class="divide-y divide-slate-100">
+             <!-- Render via JS -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/vendor/lucide.min.js"></script>
+  <script>if(window.lucide) lucide.createIcons();</script>
+  <script>if(window.lucide) lucide.createIcons();</script>
+  <script src="/js/api.js"></script>
+  <script src="/js/portal.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // Inisialisasi Worker PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+  
+  <!-- Script yang sudah ada sebelumnya -->
+  <script src="/js/api.js"></script>
+  <script src="/js/portal.js"></script>
+</body>
+</html>

@@ -6,17 +6,13 @@ const state = {
 
 function todayStr() {
   const d = new Date();
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 function addDaysStr(dateStr, days) {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() + days);
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 function formatTanggal(str) {
@@ -35,24 +31,26 @@ function formatRupiah(n) {
 // ================================================================
 async function loadPeminjaman() {
   const tbody = document.getElementById('tabel-laporan');
-  tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto"></i> Memuat data...</td></tr>`;
+  if (window.lucide) lucide.createIcons();
 
   try {
     const res = await apiGet('/laporan/peminjaman', {
       dari: state.dari, sampai: state.sampai, status: state.status
     });
-
     renderTabelPeminjaman(res.data);
     renderRekapPeminjaman(res.rekap);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle" class="w-5 h-5 mx-auto mb-1"></i> ${err.message}</td></tr>`;
+    if (window.lucide) lucide.createIcons();
   }
 }
 
 function renderTabelPeminjaman(list) {
   const tbody = document.getElementById('tabel-laporan');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">📭 Tidak ada data di periode ini</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox" class="w-5 h-5 mx-auto mb-1"></i> Tidak ada data di periode ini</td></tr>`;
+    if (window.lucide) lucide.createIcons();
     return;
   }
 
@@ -103,14 +101,16 @@ function renderRekapPeminjaman(r) {
 // ================================================================
 async function loadBukuStats() {
   const tbody = document.getElementById('tabel-buku-laporan');
-  tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto"></i> Memuat data...</td></tr>`;
+  if (window.lucide) lucide.createIcons();
 
   try {
     const res = await apiGet('/laporan/buku');
     state.bukuData = res.data;
 
     if (!res.data.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400">📭 Belum ada buku</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox" class="w-5 h-5 mx-auto mb-1"></i> Belum ada buku</td></tr>`;
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
@@ -127,34 +127,50 @@ async function loadBukuStats() {
       </tr>
     `).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle" class="w-5 h-5 mx-auto mb-1"></i> ${err.message}</td></tr>`;
+    if (window.lucide) lucide.createIcons();
   }
 }
 
 // ================================================================
-// 3. LOAD KUNJUNGAN
+// 3. LOAD KUNJUNGAN (BUKU TAMU) - HANYA ADA SATU FUNGSI INI
 // ================================================================
 async function loadKunjungan() {
   const tbody = document.getElementById('tabel-kunjungan');
-  tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto"></i> Memuat data...</td></tr>`;
+  if (window.lucide) lucide.createIcons();
 
   const tujuan = document.getElementById('filter-tujuan').value;
 
   try {
     const res = await apiGet('/laporan/kunjungan', {
-      dari: state.dari, sampai: state.sampai, tujuan
+      dari: state.dari, sampai: state.sampai, tujuan, _t: Date.now()
     });
 
     document.getElementById('rekap-kunjungan-total').textContent = res.rekap.total;
     document.getElementById('rekap-kunjungan-baca').textContent = res.rekap.totalBaca;
     document.getElementById('rekap-kunjungan-pinjam').textContent = res.rekap.totalPinjam;
+    
+    const rekapNonton = document.getElementById('rekap-kunjungan-nonton');
+    if (rekapNonton) rekapNonton.textContent = res.rekap.totalNonton || 0;
 
     if (!res.data.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">📭 Tidak ada pengunjung di periode ini</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox" class="w-5 h-5 mx-auto mb-1"></i> Tidak ada pengunjung di periode ini</td></tr>`;
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
-    tbody.innerHTML = res.data.map((k, i) => `
+    tbody.innerHTML = res.data.map((k, i) => {
+      const tuj = (k.tujuan || '').trim().toLowerCase();
+      
+      let badge = '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">Baca di Tempat</span>';
+      if (tuj === 'pinjam') {
+        badge = '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">Pinjam Buku</span>';
+      } else if (tuj === 'nonton') {
+        badge = '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold">Nonton Film</span>';
+      }
+
+      return `
       <tr class="border-b border-slate-100 hover:bg-slate-50">
         <td class="px-4 py-3 text-slate-500">${i + 1}</td>
         <td class="px-4 py-3 text-slate-600 text-xs">${formatTanggal(k.tanggal)}</td>
@@ -162,15 +178,12 @@ async function loadKunjungan() {
         <td class="px-4 py-3 font-mono text-xs text-slate-600">${escapeHtml(k.nis)}</td>
         <td class="px-4 py-3 text-slate-600">${escapeHtml(k.kelas) || '-'}</td>
         <td class="px-4 py-3 text-center text-slate-600 font-mono text-xs">${k.jam_masuk.split(' ')[1] || k.jam_masuk}</td>
-        <td class="px-4 py-3 text-center">
-          ${k.tujuan === 'pinjam' 
-            ? '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">Pinjam Buku</span>' 
-            : '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-semibold">Baca di Tempat</span>'}
-        </td>
+        <td class="px-4 py-3 text-center">${badge}</td>
       </tr>
-    `).join('');
+    `}).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle" class="w-5 h-5 mx-auto mb-1"></i> ${err.message}</td></tr>`;
+    if (window.lucide) lucide.createIcons();
   }
 }
 
@@ -181,12 +194,15 @@ async function loadLaporanPaket() {
   const tbody = document.getElementById('tabel-paket');
   if(!tbody) return;
   
-  tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader" class="w-5 h-5 animate-spin mx-auto"></i> Memuat data...</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
   try {
     const res = await apiGet('/laporan/paket');
     
     if (!res.data.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">📭 Belum ada data peminjaman buku kategori 'Paket'</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox" class="w-5 h-5 mx-auto mb-1"></i> Belum ada data peminjaman buku kategori 'Paket'</td></tr>`;
+      if (window.lucide) lucide.createIcons();
       return;
     }
 
@@ -209,7 +225,8 @@ async function loadLaporanPaket() {
       `;
     }).join('');
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle" class="w-5 h-5 mx-auto mb-1"></i> ${err.message}</td></tr>`;
+    if (window.lucide) lucide.createIcons();
   }
 }
 
@@ -238,7 +255,6 @@ function exportBukuCSV() {
   toast('CSV ter-download', 'success');
 }
 
-// Helper untuk header cetak yang seragam dan formal (Dipaksa Times New Roman)
 function getPrintHeader(judul) {
   return `
     <div class="print-header" style="font-family: 'Times New Roman', Times, serif;">
@@ -274,7 +290,6 @@ async function printLaporan() {
     document.getElementById('print-area').innerHTML = `
       <div class="print-page" style="font-family: 'Times New Roman', Times, serif;">
         ${getPrintHeader('LAPORAN PEMINJAMAN BUKU')}
-        
         <table class="print-table">
           <thead>
             <tr>
@@ -284,7 +299,7 @@ async function printLaporan() {
               <th style="width: 12%; text-align: center;">Tgl Pinjam</th>
               <th style="width: 12%; text-align: center;">Jatuh Tempo</th>
               <th style="width: 8%; text-align: center;">Buku</th>
-              <th style="width: 14%; text-align: center;">Status</th> <!-- Diperlebar -->
+              <th style="width: 14%; text-align: center;">Status</th>
               <th style="width: 12%; text-align: right;">Denda</th>
             </tr>
           </thead>
@@ -292,14 +307,12 @@ async function printLaporan() {
             ${rowsHTML || '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>'}
           </tbody>
         </table>
-        
         <div class="print-summary">
           <div class="row"><span>Total Transaksi:</span> <strong>${res.rekap.total_transaksi}</strong></div>
           <div class="row"><span>Total Buku Dipinjam:</span> <strong>${res.rekap.total_buku}</strong></div>
           <div class="row"><span>Total Terlambat:</span> <strong>${res.rekap.terlambat}</strong></div>
           <div class="row total"><span>Total Denda:</span> <strong>${formatRupiah(res.rekap.total_denda)}</strong></div>
         </div>
-        
         <div class="print-signature right">
           <div class="date">Sidoarjo, ${new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</div>
           <div>Petugas Perpustakaan</div>
@@ -308,6 +321,7 @@ async function printLaporan() {
         </div>
       </div>
     `;
+    if (window.lucide) lucide.createIcons();
     window.print();
   } catch (err) { toast(err.message, 'error'); }
 }
@@ -317,7 +331,13 @@ async function printKunjungan() {
     const tujuan = document.getElementById('filter-tujuan').value;
     const res = await apiGet('/laporan/kunjungan', { dari: state.dari, sampai: state.sampai, tujuan });
     
-    const rowsHTML = res.data.map((k, i) => `
+    const rowsHTML = res.data.map((k, i) => {
+      const tuj = (k.tujuan || '').trim().toLowerCase();
+      let teks = 'Baca';
+      if (tuj === 'pinjam') teks = 'Pinjam';
+      if (tuj === 'nonton') teks = 'Nonton';
+
+      return `
       <tr>
         <td class="text-center">${i + 1}</td>
         <td class="text-center">${formatTanggal(k.tanggal)}</td>
@@ -325,14 +345,13 @@ async function printKunjungan() {
         <td class="mono">${escapeHtml(k.nis)}</td>
         <td class="text-center">${escapeHtml(k.kelas) || '-'}</td>
         <td class="text-center">${k.jam_masuk.split(' ')[1] || k.jam_masuk}</td>
-        <td class="text-center">${k.tujuan === 'pinjam' ? 'Pinjam' : 'Baca'}</td>
+        <td class="text-center">${teks}</td>
       </tr>
-    `).join('');
+    `}).join('');
 
     document.getElementById('print-area').innerHTML = `
       <div class="print-page" style="font-family: 'Times New Roman', Times, serif;">
         ${getPrintHeader('LAPORAN BUKU TAMU')}
-        
         <table class="print-table">
           <thead>
             <tr>
@@ -349,13 +368,12 @@ async function printKunjungan() {
             ${rowsHTML || '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>'}
           </tbody>
         </table>
-        
         <div class="print-summary">
           <div class="row"><span>Total Pengunjung:</span> <strong>${res.rekap.total}</strong></div>
           <div class="row"><span>Baca di Tempat:</span> <strong>${res.rekap.totalBaca}</strong></div>
+          <div class="row"><span>Nonton Film:</span> <strong>${res.rekap.totalNonton || 0}</strong></div>
           <div class="row total"><span>Peminjaman:</span> <strong>${res.rekap.totalPinjam}</strong></div>
         </div>
-
         <div class="print-signature right">
           <div class="date">Sidoarjo, ${new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</div>
           <div>Petugas Perpustakaan</div>
@@ -364,6 +382,7 @@ async function printKunjungan() {
         </div>
       </div>
     `;
+    if (window.lucide) lucide.createIcons();
     window.print();
   } catch (err) { toast(err.message, 'error'); }
 }
@@ -381,21 +400,14 @@ async function printLaporanPaket() {
       
       return `
         <div class="print-page" style="page-break-after: always; position: relative; min-height: 90vh; font-family: 'Times New Roman', Times, serif;">
-          
-          <!-- Header Formal -->
           <div style="text-align: center; border-bottom: 2pt double #000; padding-bottom: 10pt; margin-bottom: 20pt;">
             <h1 style="font-size: 18pt; margin: 0; text-transform: uppercase;">SMP NEGERI 1 TAMAN</h1>
             <h2 style="font-size: 14pt; margin: 5pt 0 0 0; font-weight: normal;">PERPUSTAKAAN SEKOLAH</h2>
           </div>
-
-          <!-- Judul Surat -->
           <h2 style="font-size: 14pt; margin-bottom: 20pt; text-align: center; text-decoration: underline;">SURAT KETERANGAN BEBAS PUSTAKA</h2>
-          
           <p style="font-size: 11pt; margin-bottom: 20pt; line-height: 1.5;">
             Yang bertanda tangan di bawah ini, Kepala Perpustakaan SMP Negeri 1 Taman, menerangkan dengan sesungguhnya bahwa:
           </p>
-
-          <!-- Biodata -->
           <table style="font-size: 11pt; text-align: left; margin-bottom: 30pt; line-height: 1.5; width: 80%; margin-left: 20pt;">
             <tr><td style="width: 150pt;">Nama</td><td>: <strong>${escapeHtml(s.nama)}</strong></td></tr>
             <tr><td>NIS</td><td>: ${escapeHtml(s.nis)}</td></tr>
@@ -403,23 +415,17 @@ async function printLaporanPaket() {
             <tr><td>Total Buku Paket</td><td>: ${s.total_pinjam} Buku</td></tr>
             ${!isLengkap ? `<tr><td>Kekurangan</td><td>: <strong style="color: red;">${sisa} Buku belum dikembalikan</strong></td></tr>` : ''}
           </table>
-
           <p style="font-size: 11pt; margin-bottom: 15pt;">
             Berdasarkan data sistem perpustakaan, siswa tersebut dinyatakan:
           </p>
-
-                    <!-- Cap / Stempel Status -->
           <div style="text-align: center; margin: 20pt 0 10pt 0;">
             <h1 style="font-size: 36pt; color: ${warnaStatus}; margin: 0; font-weight: bold; letter-spacing: 2px; border: 4px solid ${warnaStatus}; padding: 10pt 30pt; display: inline-block; transform: rotate(-3deg); font-family: Arial, sans-serif;">
               ${teksStatus}
             </h1>
           </div>
-
           <p style="font-size: 11pt; margin-bottom: 20pt; text-align: center;">
             dalam menyelesaikan peminjaman dan pengembalian seluruh buku paket.
           </p>
-
-          <!-- Lampiran Diletakkan di Bawah -->
           ${!isLengkap && s.buku_belum_kembali ? `
             <div style="margin: 0 auto 30pt auto; border: 1px dashed #666; padding: 12pt; background: #fafafa; text-align: left; width: 80%; font-family: 'Times New Roman', Times, serif;">
               <strong style="font-size: 11pt; display: block; margin-bottom: 8pt; text-align: center;">Lampiran: Daftar Buku Paket yang Belum Dikembalikan</strong>
@@ -428,24 +434,18 @@ async function printLaporanPaket() {
               </ul>
             </div>
           ` : ''}
-
-          <!-- Tanda Tangan -->
           <div class="print-signature right">
             <div class="date">Sidoarjo, ${new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</div>
             <div>Kepala Perpustakaan</div>
             <br><br>
             <div class="line">( ............................................ )</div>
           </div>
-
         </div>
       `;
     }).join('');
-
     document.getElementById('print-area').innerHTML = pages;
     window.print();
-  } catch (err) {
-    toast(err.message, 'error');
-  }
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 // ================================================================
@@ -496,6 +496,8 @@ function switchTab(tab) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.lucide) lucide.createIcons();
+
   const today = todayStr();
   state.dari = addDaysStr(today, -30);
   state.sampai = today;

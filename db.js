@@ -162,6 +162,47 @@ try {
   console.error("❌ Gagal migrasi banned_until:", err.message);
 }
 // ▲▲▲ SAMPAI SINI ▲▲▲
+
+// ▼▼▼ MIGRASI MULTI-ROLE & BUKU DIGITAL ▼▼▼
+try {
+  const userInfo = db.prepare("PRAGMA table_info(users)").all();
+  const hasRole = userInfo.some(c => c.name === 'role');
+  const hasAnggotaId = userInfo.some(c => c.name === 'anggota_id');
+
+  if (!hasRole) {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'admin'");
+    console.log("✅ Migrasi: Kolom role ditambahkan ke tabel users");
+  }
+  if (!hasAnggotaId) {
+    db.exec("ALTER TABLE users ADD COLUMN anggota_id INTEGER");
+    console.log("✅ Migrasi: Kolom anggota_id ditambahkan ke tabel users");
+  }
+
+          // 1. Buat tabel jika belum ada
+                db.exec(`
+          CREATE TABLE IF NOT EXISTS buku_digital (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            judul TEXT NOT NULL,
+            penulis TEXT,
+            kategori TEXT,
+            deskripsi TEXT,
+            file_url TEXT NOT NULL,
+            cover_url TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+
+        const digitalInfo = db.prepare("PRAGMA table_info(buku_digital)").all();
+        const hasFileUrl = digitalInfo.some(c => c.name === 'file_url');
+        
+        if (!hasFileUrl) {
+          db.exec("ALTER TABLE buku_digital ADD COLUMN file_url TEXT");
+          console.log("✅ Migrasi: Kolom file_url ditambahkan ke tabel buku_digital");
+        }
+} catch (err) {
+  console.error("❌ Gagal migrasi tabel baru:", err.message);
+}
+// ▲▲▲ SAMPAI SINI ▲▲▲
 // ================================================================
 // SEED DATA DEFAULT
 // ================================================================

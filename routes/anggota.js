@@ -276,4 +276,41 @@ router.post('/import', (req, res) => {
   }
 });
 
+// ================================================================
+// POST /api/anggota/:id/reset-password — Reset password ke NIS awal
+// ================================================================
+router.post('/:id/reset-password', (req, res) => {
+  try {
+    const id = req.params.id;
+    
+    // Ambil data anggota untuk mendapatkan NIS
+    const anggota = db.prepare('SELECT nis, nama FROM anggota WHERE id = ?').get(id);
+    if (!anggota) return res.status(404).json({ status: 'error', message: 'Anggota tidak ditemukan' });
+
+    // Cek apakah anggota ini punya akun login
+    const user = db.prepare('SELECT id FROM users WHERE anggota_id = ?').get(id);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'Akun login belum dibuat. Siswa belum pernah login.' });
+    }
+
+    // Hash NIS sebagai password baru
+    const { hash, salt } = db.hashPassword(anggota.nis);
+
+    // Update password & paksa ganti password saat login
+    db.prepare(`
+      UPDATE users 
+      SET password_hash = ?, password_salt = ?, must_change_pw = 1 
+      WHERE id = ?
+    `).run(hash, salt, user.id);
+
+    res.json({ 
+      status: 'ok', 
+      message: `Password ${anggota.nama} berhasil direset menjadi NIS (${anggota.nis}).` 
+    });
+  } catch (err) {
+    console.error('Reset Password Error:', err);
+    res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });
+  }
+});
+
 module.exports = router;

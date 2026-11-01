@@ -2,7 +2,13 @@
 // scan.js — Final (match dengan scan.html wrapper)
 // ================================================================
 
-  const state = { bukuList: [], processing: false, forceReturn: false, isPaket: false };
+const state = { 
+  bukuList: [], 
+  processing: false, 
+  isExtend: false, // <--- GANTI INI
+  isPaket: false, 
+  isNonton: false 
+};
 
 // ================================================================
 // FULLSCREEN + EXIT
@@ -45,22 +51,47 @@ const beepBig  = () => { beepOk(); setTimeout(beepOk, 100); setTimeout(beepOk, 2
 // ================================================================
 // UI — semua pakai inline style (match dengan scan.html)
 // ================================================================
-function showStatus(text, sub, type = 'info', icon = '📚') {
-  const box = document.getElementById('status-box');
-  const colors = {
-    info:    { bg: '#fff',     border: '#e2e8f0', text: '#334155' },
-    success: { bg: '#f0fdf4',  border: '#86efac', text: '#15803d' },
-    error:   { bg: '#fef2f2',  border: '#fca5a5', text: '#b91c1c' },
-    warn:    { bg: '#fffbeb',  border: '#fcd34d', text: '#b45309' }
-  };
-  const c = colors[type] || colors.info;
-  box.style.background = c.bg;
-  box.style.borderColor = c.border;
-  document.getElementById('status-icon').textContent = icon;
-  const textEl = document.getElementById('status-text');
-  textEl.textContent = text;
-  textEl.style.color = c.text;
-  document.getElementById('status-sub').textContent = sub || '';
+// UI RENDER (Versi Anti-Crash)
+function showStatus(text, sub, type = 'info', icon = 'book') {
+  // 1. Cari elemen dengan aman
+  const wrap = document.getElementById('status-icon-wrap') || document.getElementById('status-box');
+  const textEl = document.getElementById('status-text') || document.getElementById('status-box');
+  const subEl = document.getElementById('status-sub') || document.getElementById('status-box');
+
+  // 2. Update Icon (jika wrap ada)
+  if (wrap) {
+    if (wrap.id === 'status-box') {
+      wrap.className = `card p-8 text-center shadow-lg border-2 transition-all ${
+        type === 'success' ? 'bg-green-50 border-green-300' : 
+        type === 'error' ? 'bg-red-50 border-red-300' : 
+        type === 'warn' ? 'bg-amber-50 border-amber-300' : 'bg-white'
+      }`;
+      if (wrap.innerHTML.includes('status-icon-wrap')) {
+         // Biarkan jika ada inner icon
+      }
+    } else {
+      wrap.className = type === 'info' ? '' : type;
+      const iconMap = { info: 'book', success: 'check', error: 'alert', warn: 'alert', processing: 'loader' };
+      const svgIcons = {
+        book: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+        loader: '<path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/>'
+      };
+      wrap.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:34px;height:34px;">${svgIcons[iconMap[type] || 'book']}</svg>`;
+    }
+  }
+
+  // 3. Update Teks
+  if (textEl) {
+    textEl.textContent = text;
+    textEl.style.color = type === 'success' ? '#047857' : type === 'error' ? '#b91c1c' : type === 'warn' ? '#b45309' : '#0f172a';
+  }
+  
+  // 4. Update Sub-teks
+  if (subEl && subEl.id === 'status-sub') {
+    subEl.textContent = sub || '';
+  }
 }
 
 function addLog(msg, type = 'info') {
@@ -69,6 +100,8 @@ function addLog(msg, type = 'info') {
   const el = document.createElement('div');
   el.style.cssText = `color: ${colors[type]}; padding: 6px 0; border-bottom: 1px solid #f1f5f9;`;
   el.innerHTML = `<span style="color: #94a3b8;">[${t}]</span> ${msg}`;
+  if (window.lucide) lucide.createIcons();
+
   const log = document.getElementById('log');
   log.insertBefore(el, log.firstChild);
 }
@@ -105,7 +138,7 @@ function renderList() {
 function hapusBuku(id) {
   state.bukuList = state.bukuList.filter(b => b.id !== id);
   renderList();
-  addLog('🗑️ Hapus 1 buku dari list', 'warn');
+  addLog('<i data-lucide="trash-2"></i> Hapus 1 buku dari list', 'warn');
   document.getElementById('scan-input').focus();
 }
 
@@ -124,16 +157,17 @@ async function processScan(kode) {
       state.bukuList.push({ id: res.data.id, kode_buku: res.data.kode_buku, judul: res.data.judul });
       beepOk();
       showStatus('Buku Ditambah', res.data.judul, 'success');
-      addLog('📖 + ' + escapeHtml(res.data.judul), 'success');
+      addLog('<i data-lucide="book"></i> + ' + escapeHtml(res.data.judul), 'success');
       renderList();
       
     } else if (res.tipe === 'anggota') {
       // DETEKSI NIAT: Jika ada buku di keranjang = Pinjam. Jika kosong = Baca.
       if (state.bukuList.length > 0) {
         await prosesSemua(res.data, 'pinjam'); 
-      } else {
-        await prosesTamu(res.data, 'baca');    
-      }
+              } else {
+          const niat = state.isNonton ? 'nonton' : 'baca';
+          await prosesTamu(res.data, niat); // Cek apakah mode nonton aktif
+        }
     }
   } catch (err) {
     beepErr();
@@ -146,13 +180,13 @@ async function processScan(kode) {
 // ================================================================
 async function prosesSemua(anggota, tujuan = 'pinjam') {
   try {
-    showStatus('Memproses...', anggota.nama, 'info', '⏳');
+    showStatus('Memproses...', anggota.nama, 'info', '<i data-lucide="loader"></i>');
     addLog('👤 ' + escapeHtml(anggota.nama) + ' (' + anggota.nis + ') — proses ' + state.bukuList.length + ' buku', 'info');
 
         const payload = {
       anggota_id: anggota.id,
       buku_list: state.bukuList.map(b => ({ buku_id: b.id, jumlah: 1 })),
-      force_return: state.forceReturn,
+            is_extend: state.isExtend,
       is_paket: state.isPaket // <--- TAMBAHKAN INI
     };
 
@@ -162,8 +196,8 @@ async function prosesSemua(anggota, tujuan = 'pinjam') {
     const totalKembali = res.pengembalian ? res.pengembalian.length : 0;
     const totalPinjam  = res.peminjaman ? res.peminjaman.buku.length : 0;
 
-    showStatus('SELESAI', `${totalKembali} kembali · ${totalPinjam} pinjam`, 'success', '✅');
-    addLog(`✅ Selesai — ${totalKembali} kembali, ${totalPinjam} pinjam`, 'success');
+    showStatus('SELESAI', `${totalKembali} kembali · ${totalPinjam} pinjam`, 'success', '<i data-lucide="check-circle"></i>');
+    addLog(`<i data-lucide="check-circle"></i> Selesai — ${totalKembali} kembali, ${totalPinjam} pinjam`, 'success');
 
     tampilkanSukses(anggota, res);
 
@@ -192,13 +226,13 @@ async function prosesSemua(anggota, tujuan = 'pinjam') {
 
     setTimeout(() => {
       document.getElementById('modal-sukses').style.display = 'none';
-      showStatus('Siap Scan Buku', 'Scan buku untuk peminjaman/pengembalian berikutnya', 'info', '📚');
+      showStatus('Siap Scan Buku', 'Scan buku untuk peminjaman/pengembalian berikutnya', 'info', '<i data-lucide="book-open"></i>');
     }, 3000);
 
   } catch (err) {
     beepErr();
-    showStatus('Gagal', err.message, 'error', '❌');
-    addLog('❌ ' + err.message, 'error');
+    showStatus('Gagal', err.message, 'error', '<i data-lucide="x-circle"></i>');
+    addLog('<i data-lucide="x-circle"></i> ' + err.message, 'error');
   }
 }
 
@@ -215,7 +249,7 @@ function tampilkanSukses(anggota, res) {
     html += `
       <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 12px;">
         <div style="font-weight: 700; color: #15803d; font-size: 0.875rem; margin-bottom: 8px;">
-          📥 Dikembalikan (${res.pengembalian.length})
+          <i data-lucide="download"></i> Dikembalikan (${res.pengembalian.length})
         </div>
         <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 0.875rem;">
           ${res.pengembalian.map(b => `
@@ -234,7 +268,7 @@ function tampilkanSukses(anggota, res) {
     html += `
       <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 12px;">
         <div style="font-weight: 700; color: #1e40af; font-size: 0.875rem; margin-bottom: 8px;">
-          📤 Dipinjam (${res.peminjaman.buku.length})
+          <i data-lucide="upload"></i> Dipinjam (${res.peminjaman.buku.length})
         </div>
         <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 0.875rem;">
           ${res.peminjaman.buku.map(b => `<li>📘 ${escapeHtml(b.judul)}</li>`).join('')}
@@ -255,16 +289,25 @@ function tampilkanSukses(anggota, res) {
 // FUNGSI BARU: PROSES BUKU TAMU (OTOMATIS)
 // ================================================================
 async function prosesTamu(anggota, tujuan = 'baca') {
+  console.log("🚀 Mengirim ke backend dengan tujuan:", tujuan);
   try {
     const res = await apiPost('/scan/tamu', { anggota_id: anggota.id, tujuan });
-    const teksTujuan = tujuan === 'pinjam' ? 'MEMINJAM BUKU' : 'BACA DI TEMPAT';
     
+    // 1. TENTUKAN TEKS TUJUAN
+    let teksTujuan = 'BACA DI TEMPAT';
+    if (tujuan === 'pinjam') teksTujuan = 'MEMINJAM BUKU';
+    if (tujuan === 'nonton') teksTujuan = 'NONTON FILM'; // <--- INI YANG BIKIN BISA "NONTON FILM"
+
     if (res.tipe === 'masuk') {
-      beepOk(); beepOk();
+      beepOk(); setTimeout(beepOk, 150);
+      
+      // 2. UPDATE UI SECARA LANGSUNG (TANPA showStatus)
       document.getElementById('status-box').className = `card p-8 text-center shadow-lg border-2 transition-all bg-green-50 border-green-300`;
-      // PERHATIKAN: ID di bawah ini menggunakan status-icon-wrap
+      document.getElementById('status-icon-wrap').className = 'success';
       document.getElementById('status-icon-wrap').innerHTML = `<svg class="w-16 h-16 mx-auto text-green-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
-      document.getElementById('status-text').className = `text-3xl font-bold mt-4 text-green-700`;
+      
+      document.getElementById('status-text').className = `text-3xl font-bold mt-4`;
+      document.getElementById('status-text').style.color = '#047857';
       document.getElementById('status-text').textContent = res.anggota.nama.toUpperCase();
       
       document.getElementById('status-sub').innerHTML = `
@@ -277,8 +320,11 @@ async function prosesTamu(anggota, tujuan = 'baca') {
     } else if (res.tipe === 'sudah') {
       beepWarn(); 
       document.getElementById('status-box').className = `card p-8 text-center shadow-lg border-2 transition-all bg-blue-50 border-blue-300`;
+      document.getElementById('status-icon-wrap').className = 'processing';
       document.getElementById('status-icon-wrap').innerHTML = `<svg class="w-16 h-16 mx-auto text-blue-700" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
-      document.getElementById('status-text').className = `text-3xl font-bold mt-4 text-blue-700`;
+      
+      document.getElementById('status-text').className = `text-3xl font-bold mt-4`;
+      document.getElementById('status-text').style.color = '#1d4ed8';
       document.getElementById('status-text').textContent = res.anggota.nama.toUpperCase();
       
       document.getElementById('status-sub').innerHTML = `
@@ -288,12 +334,22 @@ async function prosesTamu(anggota, tujuan = 'baca') {
       addLog(`ℹ️ ${res.anggota.nama} sudah discan hari ini`, 'info');
     }
 
+    // 3. RESET STATE SETELAH 3 DETIK
     setTimeout(() => { 
-      showStatus('Siap Scan', 'Scan Buku untuk Pinjam, atau Kartu untuk Baca', 'info', 'book-open'); 
+      state.isNonton = false;
+      const btnNonton = document.getElementById('btn-mode-nonton');
+      if (btnNonton) {
+        btnNonton.style.background = '#f8fafc'; 
+        btnNonton.style.borderColor = '#cbd5e1'; 
+        btnNonton.style.color = '#475569';
+      }
+      showStatus('Siap Scan', 'Scan Buku untuk pinjam, atau Kartu untuk baca', 'info'); 
     }, 3000);
 
   } catch (err) {
-    beepErr(); showStatus('Gagal', err.message, 'error');
+    console.error(err);
+    beepErr(); 
+    showStatus('Gagal', err.message, 'error');
   }
 }
 
@@ -301,21 +357,43 @@ async function prosesTamu(anggota, tujuan = 'baca') {
 // INIT
 // ================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // --- LOGIKA TOMBOL KEMBALIKAN ---
-  const btnKembali = document.getElementById('btn-mode-kembalikan');
-  if (btnKembali) {
-    btnKembali.addEventListener('click', () => {
-      state.forceReturn = !state.forceReturn;
-      if (state.forceReturn) {
-        btnKembali.style.background = '#fee2e2';
-        btnKembali.style.borderColor = '#fca5a5';
-        btnKembali.style.color = '#b91c1c';
-        addLog('Mode: Pengembalian Buku Aktif', 'warn');
+  if (window.lucide) lucide.createIcons();
+  if (window.lucide) lucide.createIcons();
+
+    // --- TOMBOL PERPANJANG ---
+  const btnPerpanjang = document.getElementById('btn-mode-perpanjang');
+  if (btnPerpanjang) {
+    btnPerpanjang.addEventListener('click', () => {
+      state.isExtend = !state.isExtend;
+      if (state.isExtend) {
+        btnPerpanjang.style.background = '#fef3c7'; // Kuning
+        btnPerpanjang.style.borderColor = '#fcd34d';
+        btnPerpanjang.style.color = '#b45309';
+        addLog('Mode: Perpanjang Buku Aktif', 'warn');
       } else {
-        btnKembali.style.background = '#fff';
-        btnKembali.style.borderColor = '#cbd5e1';
-        btnKembali.style.color = '#475569';
-        addLog('Mode: Normal (Perpanjang Otomatis)', 'info');
+        btnPerpanjang.style.background = '#fff';
+        btnPerpanjang.style.borderColor = '#cbd5e1';
+        btnPerpanjang.style.color = '#475569';
+        addLog('Mode: Normal (Kembalikan)', 'info');
+      }
+    });
+  }
+
+        const btnNonton = document.getElementById('btn-mode-nonton');
+  if (btnNonton) {
+    btnNonton.addEventListener('click', () => {
+      console.log("Tombol Nonton BERHASIL DIKLIK!"); // <--- TAMBAHKAN INI
+      state.isNonton = !state.isNonton;
+      if (state.isNonton) {
+        btnNonton.style.background = '#f3e8ff'; // Ungu
+        btnNonton.style.borderColor = '#d8b4fe';
+        btnNonton.style.color = '#7e22ce';
+        addLog('Mode: Nonton Film Aktif', 'warn');
+      } else {
+        btnNonton.style.background = '#f8fafc';
+        btnNonton.style.borderColor = '#cbd5e1';
+        btnNonton.style.color = '#475569';
+        addLog('Mode: Normal', 'info');
       }
     });
   }
@@ -364,6 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-clear-log').addEventListener('click', () => {
     document.getElementById('log').innerHTML = '';
+  if (window.lucide) lucide.createIcons();
+
     input.focus();
   });
 

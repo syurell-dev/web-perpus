@@ -58,7 +58,9 @@ async function loadSettings() {
 // ================================================================
 async function loadPeminjaman() {
   const tbody = document.getElementById('tabel-body');
-  tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
 
   try {
     const res = await apiGet('/peminjaman', {
@@ -68,7 +70,9 @@ async function loadPeminjaman() {
     renderTabel(res.data);
     renderPagination(res.pagination);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle"></i> ${err.message}</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
   }
 }
 
@@ -76,7 +80,9 @@ function renderTabel(list) {
   const tbody = document.getElementById('tabel-body');
 
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">📭 Tidak ada data peminjaman</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox"></i> Tidak ada data peminjaman</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
     return;
   }
 
@@ -90,7 +96,7 @@ function renderTabel(list) {
     }[p.status] || p.status;
 
     const telatBadge = p.is_terlambat
-      ? '<span class="ml-1 px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">⚠️ Telat</span>'
+      ? '<span class="ml-1 px-2 py-0.5 rounded text-xs bg-red-100 text-red-700"><i data-lucide="alert-triangle"></i> Telat</span>'
       : '';
 
     const bukuInfo = `${p.buku_belum_kembali}/${p.total_buku}`;
@@ -107,7 +113,7 @@ function renderTabel(list) {
         <td class="px-4 py-3 text-slate-600 text-xs">${formatTanggal(p.tanggal_pinjam)}</td>
         <td class="px-4 py-3 text-slate-600 text-xs">
           ${formatTanggal(p.tanggal_jatuh)}
-          ${p.is_terlambat ? '<div class="text-red-600 text-xs mt-0.5">⚠️ Terlambat</div>' : ''}
+          ${p.is_terlambat ? '<div class="text-red-600 text-xs mt-0.5"><i data-lucide="alert-triangle"></i> Terlambat</div>' : ''}
         </td>
         <td class="px-4 py-3 text-center text-slate-600 font-medium">${bukuInfo}</td>
         <td class="px-4 py-3 text-center">${statusBadge}${telatBadge}</td>
@@ -115,9 +121,9 @@ function renderTabel(list) {
         <td class="px-4 py-3 text-center" data-stop>
           <div class="flex gap-1 justify-center">
             <button data-action="bukaDetail" data-id="${p.id}" title="Detail"
-              class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">👁️</button>
+              class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"><i data-lucide="eye"></i></button>
             <button data-action="konfirmasiHapus" data-id="${p.id}" data-str="${escapeHtml(p.kode_pinjam)}" title="Hapus"
-              class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">🗑️</button>
+              class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"><i data-lucide="trash-2"></i></button>
           </div>
         </td>
       </tr>
@@ -171,6 +177,8 @@ function setupAutocomplete(inputEl, listEl, fetchFn, onSelect, minChars = 2) {
         const results = await fetchFn(q);
         if (!results.length) {
           listEl.innerHTML = '<div class="autocomplete-item text-slate-400">Tidak ada hasil</div>';
+  if (window.lucide) lucide.createIcons();
+
           listEl.classList.remove('hidden');
           return;
         }
@@ -208,6 +216,8 @@ function openModalPinjam() {
   document.getElementById('tanggal-pinjam').value = todayStr();
   updateJatuhTempo();
   document.getElementById('buku-rows').innerHTML = '';
+  if (window.lucide) lucide.createIcons();
+
   state.bukuRowSeq = 0;
   tambahBarisBuku();
 }
@@ -241,6 +251,8 @@ function tambahBarisBuku() {
     <input type="number" class="buku-jumlah w-20 px-3 py-2 border border-slate-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500" value="1" min="1">
     <button type="button" class="btn-hapus-row px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">✕</button>
   `;
+  if (window.lucide) lucide.createIcons();
+
 
   rows.appendChild(div);
 
@@ -261,7 +273,9 @@ function tambahBarisBuku() {
     hiddenId.value = item.buku.id;
     searchEl.value = item.buku.judul;
     infoEl.classList.remove('hidden');
-    infoEl.innerHTML = `📚 <b>${escapeHtml(item.buku.kode_buku)}</b> · Stok tersedia: <b>${item.buku.stok_tersedia}</b>`;
+    infoEl.innerHTML = `<i data-lucide="book-open"></i> <b>${escapeHtml(item.buku.kode_buku)}</b> · Stok tersedia: <b>${item.buku.stok_tersedia}</b>`;
+  if (window.lucide) lucide.createIcons();
+
     jumlahEl.max = item.buku.stok_tersedia;
   });
 
@@ -324,14 +338,18 @@ async function bukaDetail(id) {
   state.detailId = id;
   document.getElementById('modal-detail').classList.remove('hidden');
   document.getElementById('detail-content').innerHTML =
-    '<div class="text-center text-slate-400 py-8">⏳ Memuat...</div>';
+    '<div class="text-center text-slate-400 py-8"><i data-lucide="loader"></i> Memuat...</div>';
+  if (window.lucide) lucide.createIcons();
+
 
   try {
     const res = await apiGet('/peminjaman/' + id);
     renderDetail(res.data);
   } catch (err) {
     document.getElementById('detail-content').innerHTML =
-      `<div class="text-center text-red-500 py-8">❌ ${err.message}</div>`;
+      `<div class="text-center text-red-500 py-8"><i data-lucide="x-circle"></i> ${err.message}</div>`;
+  if (window.lucide) lucide.createIcons();
+
   }
 }
 
@@ -380,7 +398,7 @@ function renderDetail(p) {
   const adaBelumKembali = p.detail.some(d => d.status === 'dipinjam');
   const tombolKembalikan = adaBelumKembali
     ? `<button data-action="kembalikanSemua" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
-         ✅ Kembalikan Semua
+         <i data-lucide="check-circle"></i> Kembalikan Semua
        </button>`
     : '';
 
@@ -401,7 +419,7 @@ function renderDetail(p) {
         </div>
         <div>
           <div class="text-xs text-slate-500 mb-1">Status</div>
-          <div>${statusBadge}${p.is_terlambat ? ' <span class="ml-1 px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">⚠️ Telat</span>' : ''}</div>
+          <div>${statusBadge}${p.is_terlambat ? ' <span class="ml-1 px-2 py-0.5 rounded text-xs bg-red-100 text-red-700"><i data-lucide="alert-triangle"></i> Telat</span>' : ''}</div>
         </div>
         <div>
           <div class="text-xs text-slate-500 mb-1">Tanggal Pinjam</div>
@@ -440,7 +458,7 @@ function renderDetail(p) {
 
       <!-- Tabel detail buku -->
       <div>
-        <div class="text-sm font-semibold text-slate-700 mb-2">📚 Daftar Buku</div>
+        <div class="text-sm font-semibold text-slate-700 mb-2"><i data-lucide="book-open"></i> Daftar Buku</div>
         <div class="border border-slate-200 rounded-lg overflow-hidden">
           <table class="w-full text-sm">
             <thead class="bg-slate-50 border-b border-slate-200">
@@ -479,6 +497,8 @@ function renderDetail(p) {
       </div>
     </div>
   `;
+  if (window.lucide) lucide.createIcons();
+
 }
 
 async function kembalikanSemua() {
@@ -585,6 +605,8 @@ async function cetakStruk() {
         </div>
       </div>
     `;
+  if (window.lucide) lucide.createIcons();
+
 
     window.print();
   } catch (err) {

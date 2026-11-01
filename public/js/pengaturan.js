@@ -67,6 +67,8 @@ async function simpanPengaturan(e) {
   const btn = document.getElementById('btn-simpan');
   btn.disabled = true;
   btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Menyimpan...';
+  if (window.lucide) lucide.createIcons();
+
   if (typeof lucide !== 'undefined') lucide.createIcons();
 
   try {
@@ -78,6 +80,8 @@ async function simpanPengaturan(e) {
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Simpan Pengaturan';
+  if (window.lucide) lucide.createIcons();
+
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 }
@@ -92,6 +96,8 @@ async function perpanjangDomain() {
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Memproses...';
+  if (window.lucide) lucide.createIcons();
+
   if (typeof lucide !== 'undefined') lucide.createIcons();
 
   try {
@@ -194,7 +200,9 @@ async function loadAnggotaDropdown() {
 // Konversi NIS → EAN-13 (13 digit valid)
 function nisToEAN13(nis) {
   const digits = String(nis).replace(/\D/g, '');
-  const prefix = '200'; // Prefix internal perpustakaan
+  const prefix = '200';
+  if (window.lucide) lucide.createIcons();
+ // Prefix internal perpustakaan
   const body = digits.padStart(9, '0').slice(-9);
   const base12 = prefix + body;
 
@@ -291,6 +299,8 @@ async function cetakKartu() {
       <div class="print-cards-container">${html}</div>
     </div>
   `;
+  if (window.lucide) lucide.createIcons();
+
   setTimeout(() => { 
   renderAllBarcodes(); 
   setTimeout(() => window.print(), 300);
@@ -312,6 +322,8 @@ async function cetakSemuaKartu() {
       <div class="print-cards-container">${cards.join('')}</div>
     </div>
   `;
+  if (window.lucide) lucide.createIcons();
+
   setTimeout(() => { 
   renderAllBarcodes(); 
   setTimeout(() => window.print(), 300);
@@ -322,6 +334,10 @@ async function cetakSemuaKartu() {
 // INIT
 // ================================================================
 document.addEventListener('DOMContentLoaded', async () => {
+  if (window.lucide) lucide.createIcons();
+
+  if (window.lucide) lucide.createIcons();
+
   await loadPengaturan();
   await loadAnggotaDropdown();
 

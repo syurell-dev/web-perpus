@@ -18,7 +18,9 @@ const state = {
 // ================================================================
 async function loadBuku() {
   const tbody = document.getElementById('tabel-body');
-  tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
 
   try {
     const res = await apiGet('/buku', {
@@ -32,7 +34,9 @@ async function loadBuku() {
     renderPagination(res.pagination);
     renderKategoriDropdown(res.kategori_list);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle"></i> ${err.message}</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
   }
 }
 
@@ -43,7 +47,9 @@ function renderTabel(list) {
   const tbody = document.getElementById('tabel-body');
 
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400">📭 Tidak ada data buku</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox"></i> Tidak ada data buku</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
     return;
   }
 
@@ -70,9 +76,9 @@ function renderTabel(list) {
         <td class="px-4 py-3">
           <div class="flex gap-1 justify-center">
             <button data-action="editBuku" data-id="${b.id}" title="Edit"
-              class="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded hover:bg-amber-200">✏️</button>
+              class="px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded hover:bg-amber-200"><i data-lucide="edit-2"></i></button>
             <button data-action="konfirmasiHapus" data-id="${b.id}" data-str="${escapeHtml(b.judul)}" title="Hapus"
-              class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">🗑️</button>
+              class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"><i data-lucide="trash-2"></i></button>
           </div>
         </td>
       </tr>
@@ -138,6 +144,8 @@ function openModal(mode = 'tambah', data = null) {
   document.getElementById('modal').classList.remove('hidden');
   document.getElementById('form-buku').reset();
   document.getElementById('f-id').value = '';
+  if (window.lucide) lucide.createIcons();
+
 
   if (mode === 'edit' && data) {
     document.getElementById('modal-title').textContent = 'Edit Buku';

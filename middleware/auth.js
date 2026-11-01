@@ -1,10 +1,10 @@
 // ================================================================
-// middleware/auth.js — Session + rate limit + CSRF
+// middleware/auth.js — Session + rate limit + CSRF + Role Check
 // ================================================================
 const crypto = require('crypto');
 
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 jam
-const sessions = new Map();                // sessionId → { userId, username, mustChangePw, expiresAt }
+const sessions = new Map();                // sessionId → { userId, username, role, anggota_id, mustChangePw, expiresAt }
 
 // Rate limit login: IP → { count, blockedUntil }
 const loginAttempts = new Map();
@@ -16,6 +16,9 @@ function createSession(user) {
   sessions.set(id, {
     userId: user.id,
     username: user.username,
+    role: user.role || 'admin',
+        nama: user.nama || user.username, // <--- TAMBAHKAN INI
+    anggota_id: user.anggota_id,
     mustChangePw: user.must_change_pw === 1,
     expiresAt: Date.now() + SESSION_TTL_MS
   });
@@ -81,27 +84,53 @@ function checkCSRF(req, res, next) {
 }
 
 // ================================================================
-// Middleware utama
+// Middleware Utama
 // ================================================================
 function requireAuth(req, res, next) {
   const session = getSession(req);
 
   if (!session) {
-    if (req.path.startsWith('/api/')) {
+    // Gunakan req.originalUrl agar mendeteksi '/api/...' dengan benar
+    if (req.originalUrl.startsWith('/api/')) {
       return res.status(401).json({ status: 'error', message: 'Belum login' });
     }
     return res.redirect('/login.html');
   }
 
   // Wajib ganti password dulu
-  if (session.mustChangePw && req.path !== '/api/auth/change-password' &&
-      req.path !== '/api/auth/logout' && req.path !== '/login.html') {
-    if (req.path.startsWith('/api/')) {
+  if (session.mustChangePw && req.originalUrl !== '/api/auth/change-password' &&
+      req.originalUrl !== '/api/auth/logout' && req.originalUrl !== '/login.html') {
+    if (req.originalUrl.startsWith('/api/')) {
       return res.status(403).json({ status: 'error', message: 'Harus ganti password dulu', mustChangePw: true });
     }
     return res.redirect('/login.html?change=1');
   }
 
+  req.user = session;
+
+    // Redirect jika Siswa/Guru mencoba akses Dashboard/Admin UI (selain portal)
+  // PENTING: Gunakan req.originalUrl dan pastikan BUKAN panggilan API
+  if (session.role !== 'admin' && req.method === 'GET' && !req.originalUrl.startsWith('/api/')) {
+    const adminPages = ['/', '/index.html', '/dashboard.html', '/buku.html', '/anggota.html', 
+                        '/peminjaman.html', '/laporan.html', '/pengaturan.html', '/scan.html', '/buku-digital.html'];
+    
+    // Pisahkan query string jika ada (misal: /?search=)
+    const currentPath = req.originalUrl.split('?')[0];
+
+    if (adminPages.includes(currentPath)) {
+      return res.redirect('/portal.html');
+    }
+  }
+
+  next();
+}
+
+// Middleware khusus API: Mencegah Siswa/Guru memanipulasi data via API
+function requireAdmin(req, res, next) {
+  const session = getSession(req);
+  if (!session || session.role !== 'admin') {
+    return res.status(403).json({ status: 'error', message: 'Akses ditolak. Hanya untuk Admin.' });
+  }
   req.user = session;
   next();
 }
@@ -110,5 +139,5 @@ module.exports = {
   createSession, destroySession, getSession,
   setSessionCookie, clearSessionCookie,
   checkRateLimit, recordFail, resetAttempts,
-  checkCSRF, requireAuth
+  checkCSRF, requireAuth, requireAdmin
 };

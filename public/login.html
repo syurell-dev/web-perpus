@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="view-transition" content="same-origin">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Perpustakaan SMPN 1 Taman</title>
   <link rel="stylesheet" href="/css/theme.css">
@@ -260,7 +260,7 @@
         <div class="field">
           <label for="username">Username</label>
           <div class="input-wrap">
-            <input type="text" id="username" required autocomplete="username" placeholder="Masukkan username">
+            <input type="text" id="username" required autocomplete="username" placeholder="Masukkan username atau nis">
             <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round">
@@ -324,18 +324,34 @@
               <path d="M20 6 9 17l-5-5"/>
             </svg>
           </div>
-        </div>
+        </div> <!-- Menutup field konfirmasi -->
 
         <button type="submit" class="btn-submit" id="btn-change">Simpan & Lanjut</button>
-      </div>
-    </form>
+      </div> <!-- Menutup div id="step-change" -->
+    </form> <!-- Menutup form-login -->
 
-    <div class="footer">
+        <!-- Info Login Pertama (Yang Rapi) -->
+    <div style="margin-top: 24px; padding: 16px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; display: flex; gap: 12px; text-align: left;">
+      <div style="color: #64748b; flex-shrink: 0; margin-top: 2px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      </div>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">Info Login Siswa & Guru</div>
+        <div style="font-size: 12px; color: #475569; line-height: 1.5;">
+          Gunakan <b>NIS</b> sebagai Username dan Password untuk login pertama kali.
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer (Hanya satu ini saja) -->
+    <div class="footer" style="margin-top: 20px;">
       Aplikasi Perpustakaan · <b>SMPN 1 Taman Sidoarjo</b>
     </div>
-  </div>
+
+  </div> <!-- Penutup login-card -->
 
   <script>
+    // (Biarkan kode JS Anda di bawah sini)
     const msg = document.getElementById('msg');
     const form = document.getElementById('form-login');
     const stepLogin = document.getElementById('step-login');

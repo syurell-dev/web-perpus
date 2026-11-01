@@ -358,9 +358,7 @@ td[colspan] { color: var(--text-3) !important; }
    ============================================================ */
 
 /* View Transitions API — crossfade otomatis antar halaman */
-@view-transition {
-  navigation: auto;
-}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 0.25s;
@@ -592,4 +590,74 @@ main {
 /* Sembunyikan tombol menu di Laptop (layar lebar) */
 @media (min-width: 769px) {
   #mobile-menu-btn { display: none !important; }
+}
+/* ================================================================
+   FOUC & VIEW TRANSITION FIX
+   ================================================================ */
+
+/* 1. Kunci ukuran <i> transparan agar ruangnya siap */
+i[data-lucide] {
+  display: inline-block !important;
+  width: 1.25rem !important;  /* Kunci ukuran standar w-5 */
+  height: 1.25rem !important;
+  opacity: 0;
+  vertical-align: middle;
+  flex-shrink: 0;
+  /* Matikan transisi khusus ikon */
+  view-transition-name: none !important; 
+}
+
+/* 2. Pastikan SVG tampil normal */
+svg.lucide {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  view-transition-name: none !important;
+}
+
+/* 3. Cegah animasi transisi pada elemen sidebar */
+aside, nav, header {
+  view-transition-name: none !important;
+}
+
+/* ================================================================
+   FOUC FIX FINAL: Kunci ukuran sebelum SVG dirender
+   ================================================================ */
+i[data-lucide] {
+  display: inline-block !important;
+  width: 1.25rem !important;  /* Default w-5 */
+  height: 1.25rem !important;
+  opacity: 0;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+svg.lucide {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+
+/* ================================================================
+   FOUC FIX MUTLAK (Mencegah SVG membesar sebelum Tailwind memuat)
+   ================================================================ */
+
+/* 1. Sembunyikan teks tag <i> asli, tapi tetap beri ruang */
+i[data-lucide] {
+  display: inline-block !important;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: transparent !important; 
+  background: transparent !important;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* 2. Kunci ukuran SVG sebelum class Tailwind aktif */
+svg.lucide {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  vertical-align: middle;
+  flex-shrink: 0;
 }

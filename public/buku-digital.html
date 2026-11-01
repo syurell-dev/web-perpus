@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Buku Digital - Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/theme.css">
+  <script src="/vendor/lucide.min.js"></script>
+  <script>if(window.lucide) lucide.createIcons();</script>
+  <script>if(window.lucide) lucide.createIcons();</script>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+  <!-- SIDEBAR (Sederhana) -->
+  <div class="flex min-h-screen">
+    <aside class="w-60 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col">
+      <div class="p-5 border-b border-slate-700">
+        <div class="flex items-center gap-2">
+          <img src="/img/logo.png" alt="Logo" style="width:42px;height:42px;object-fit:contain;background:#fff;border-radius:10px;padding:4px;flex-shrink:0;">
+          <div style="display:flex;flex-direction:column;">
+            <div class="font-bold text-sm">SMPN 1 Taman</div>
+            <div class="text-xs text-slate-400">Sidoarjo</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i> <span>Dashboard</span>
+        </a>
+        <a href="/buku.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="book" class="w-5 h-5"></i> <span>Buku</span>
+        </a>
+        <a href="/anggota.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="users" class="w-5 h-5"></i> <span>Anggota</span>
+        </a>
+        <a href="/peminjaman.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i> <span>Peminjaman</span>
+        </a>
+        <a href="/scan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="scan-line" class="w-5 h-5"></i> <span>Scan Mode</span>
+        </a>
+        <a href="/buku-digital.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium">
+          <i data-lucide="tablet" class="w-5 h-5"></i> <span>Buku Digital</span>
+        </a>
+        <a href="/laporan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i> <span>Laporan</span>
+        </a>
+        <a href="/pengaturan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="settings" class="w-5 h-5"></i> <span>Pengaturan</span>
+        </a>
+      </nav>
+
+      <div class="p-4 border-t border-slate-700 text-xs text-slate-500">v1.2.0</div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 p-8">
+      <div class="mb-6 flex justify-between items-end">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-800">Buku Digital</h1>
+          <p class="text-slate-500 text-sm">Upload dan kelola file PDF perpustakaan</p>
+        </div>
+        <button id="btn-tambah" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+          <i data-lucide="upload" class="w-4 h-4"></i> Upload Buku Baru
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-600">
+            <tr>
+              <th class="px-4 py-3 font-semibold w-12">No</th>
+              <th class="px-4 py-3 font-semibold">Judul</th>
+              <th class="px-4 py-3 font-semibold">Penulis</th>
+              <th class="px-4 py-3 font-semibold text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-digital" class="divide-y divide-slate-100">
+            <tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL UPLOAD -->
+  <div id="modal-upload" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+      <h2 class="text-lg font-bold text-slate-800 mb-4">Upload Buku Digital</h2>
+      <form id="form-upload" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Judul Buku *</label>
+          <input type="text" id="f-judul" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Penulis</label>
+          <input type="text" id="f-penulis" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">File PDF * (Maks 50MB)</label>
+          <input type="file" id="f-file" accept=".pdf" required class="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        </div>
+        <div class="flex justify-end gap-2 pt-4 border-t">
+          <button type="button" id="btn-batal" class="px-4 py-2 border rounded-lg text-sm hover:bg-slate-50">Batal</button>
+          <button type="submit" id="btn-simpan" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium">Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+      loadData();
+
+      const modal = document.getElementById('modal-upload');
+      const form = document.getElementById('form-upload');
+      const btnTambah = document.getElementById('btn-tambah');
+      const btnBatal = document.getElementById('btn-batal');
+      const btnSimpan = document.getElementById('btn-simpan');
+      const tbody = document.getElementById('tabel-digital');
+
+      btnTambah.addEventListener('click', () => { modal.classList.remove('hidden'); form.reset(); });
+      btnBatal.addEventListener('click', () => modal.classList.add('hidden'));
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        btnSimpan.disabled = true;
+        btnSimpan.textContent = 'Mengupload...';
+
+        const formData = new FormData();
+        formData.append('judul', document.getElementById('f-judul').value);
+        formData.append('penulis', document.getElementById('f-penulis').value);
+        formData.append('file_pdf', document.getElementById('f-file').files[0]);
+
+        try {
+          const res = await fetch('/api/digital', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Gagal upload');
+          
+          alert('Upload Berhasil!');
+          modal.classList.add('hidden');
+          loadData();
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          btnSimpan.disabled = false;
+          btnSimpan.textContent = 'Upload';
+        }
+      });
+
+      async function loadData() {
+        try {
+          const res = await apiGet('/digital');
+          if (res.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-10 text-center text-slate-400">Belum ada buku digital.</td></tr>`;
+            return;
+          }
+          tbody.innerHTML = res.data.map((b, i) => `
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 text-slate-500">${i + 1}</td>
+              <td class="px-4 py-3 font-medium text-slate-800">${escapeHtml(b.judul)}</td>
+              <td class="px-4 py-3 text-slate-600">${escapeHtml(b.penulis || '-')}</td>
+              <td class="px-4 py-3 text-center">
+                <button onclick="hapusBuku(${b.id})" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg transition" title="Hapus">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('');
+          if (window.lucide) lucide.createIcons();
+        } catch (err) {
+          tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-10 text-center text-red-500">Gagal memuat data.</td></tr>`;
+        }
+      }
+
+      window.hapusBuku = async (id) => {
+        if (!confirm('Yakin ingin menghapus buku ini? File PDF akan dihapus permanen.')) return;
+        try {
+          await apiDelete('/digital/' + id);
+          loadData();
+        } catch (err) {
+          alert(err.message);
+        }
+      };
+    });
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>

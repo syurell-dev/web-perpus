@@ -248,14 +248,16 @@ router.get('/kunjungan', (req, res) => {
     const rows = db.prepare(query).all(...params);
 
     const total = rows.length;
-    const totalBaca = rows.filter(r => r.tujuan === 'baca').length;
-    const totalPinjam = rows.filter(r => r.tujuan === 'pinjam').length;
+    const totalBaca = rows.filter(r => r.tujuan && r.tujuan.toLowerCase() === 'baca').length;
+    const totalPinjam = rows.filter(r => r.tujuan && r.tujuan.toLowerCase() === 'pinjam').length;
+    const totalNonton = rows.filter(r => r.tujuan && r.tujuan.toLowerCase() === 'nonton').length;
 
     res.json({
       status: 'ok',
       data: rows,
-      rekap: { total, totalBaca, totalPinjam }
+      rekap: { total, totalBaca, totalPinjam, totalNonton }
     });
+    
   } catch (err) {
     console.error('GET /laporan/kunjungan error:', err);
     res.status(500).json({ status: 'error', message: 'Terjadi kesalahan pada server' });

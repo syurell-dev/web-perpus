@@ -1,5 +1,5 @@
 // ================================================================
-// routes/auth.js — Login / Logout / Change Password
+// routes/auth.js — Login / Logout / Change Password (Multi-Role)
 // ================================================================
 const express = require('express');
 const router = express.Router();
@@ -23,13 +23,40 @@ router.post('/login', (req, res) => {
 
   const { username, password } = req.body || {};
   if (!username || !password) {
-    return res.status(400).json({ status: 'error', message: 'Username dan password wajib diisi' });
+    return res.status(400).json({ status: 'error', message: 'Username/NIS dan password wajib diisi' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(String(username).trim());
+  const uname = String(username).trim();
+  let user = db.prepare('SELECT * FROM users WHERE username = ?').get(uname);
+
+  // JIKA USER TIDAK DITEMUKAN, CEK APAKAH INI NIS ANGGOTA (AUTO-REGISTER)
+  if (!user) {
+    const anggota = db.prepare('SELECT * FROM anggota WHERE nis = ?').get(uname);
+    if (anggota) {
+      // Buatkan akun otomatis. Password default = NIS.
+      const { hash, salt } = db.hashPassword(uname); // password = nis
+      const role = anggota.jenis === 'siswa' ? 'siswa' : 'guru';
+      
+      db.prepare(`
+        INSERT INTO users (username, password_hash, password_salt, must_change_pw, role, anggota_id)
+        VALUES (?, ?, ?, 1, ?, ?)
+      `).run(uname, hash, salt, role, anggota.id);
+
+      user = db.prepare('SELECT * FROM users WHERE username = ?').get(uname);
+    }
+  }
+
   if (!user || !verifyPassword(password, user.password_hash, user.password_salt)) {
     auth.recordFail(ip);
-    return res.status(401).json({ status: 'error', message: 'Username atau password salah' });
+    return res.status(401).json({ status: 'error', message: 'Username/NIS atau password salah' });
+  }
+
+  if (user.role !== 'admin') {
+    const anggota = db.prepare('SELECT nama, status FROM anggota WHERE id = ?').get(user.anggota_id);
+    if (!anggota || anggota.status !== 'aktif') {
+      return res.status(403).json({ status: 'error', message: 'Akun dinonaktifkan. Hubungi petugas.' });
+    }
+    user.nama = anggota.nama; // <--- SIMPAN NAMA ASLI
   }
 
   auth.resetAttempts(ip);
@@ -42,7 +69,8 @@ router.post('/login', (req, res) => {
     status: 'ok',
     message: 'Login berhasil',
     mustChangePw: user.must_change_pw === 1,
-    username: user.username
+    username: user.username,
+    role: user.role
   });
 });
 
@@ -58,7 +86,13 @@ router.post('/logout', (req, res) => {
 router.get('/me', (req, res) => {
   const session = auth.getSession(req);
   if (!session) return res.status(401).json({ status: 'error', message: 'Belum login' });
-  res.json({ status: 'ok', username: session.username, mustChangePw: session.mustChangePw });
+  res.json({ 
+    status: 'ok', 
+    username: session.username, 
+    nama: session.nama, // <--- TAMBAHKAN INI
+    role: session.role,
+    mustChangePw: session.mustChangePw 
+  });
 });
 
 // POST /api/auth/change-password
@@ -84,7 +118,6 @@ router.post('/change-password', (req, res) => {
     UPDATE users SET password_hash = ?, password_salt = ?, must_change_pw = 0 WHERE id = ?
   `).run(hash, salt, session.userId);
 
-  // Refresh session biar flag mustChangePw hilang
   session.mustChangePw = false;
 
   res.json({ status: 'ok', message: 'Password berhasil diubah' });

@@ -99,10 +99,12 @@ function renderPopuler(list) {
   const el = document.getElementById('populer-list');
   if (!list || !list.length) {
     el.innerHTML = '<div class="text-slate-400 text-sm">Belum ada data peminjaman</div>';
+  if (window.lucide) lucide.createIcons();
+
     return;
   }
 
-  const medals = ['🥇','🥈','🥉'];
+  const medals = ['<i data-lucide="award"></i>','<i data-lucide="award"></i>','<i data-lucide="award"></i>'];
   el.innerHTML = list.map((b, i) => `
     <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg">
       <div class="text-xl w-6 text-center">${medals[i] || (i + 1)}</div>
@@ -124,6 +126,8 @@ function renderTerbaru(list) {
   const el = document.getElementById('terbaru-list');
   if (!list || !list.length) {
     el.innerHTML = '<div class="text-slate-400 text-sm py-4 text-center">Belum ada peminjaman</div>';
+  if (window.lucide) lucide.createIcons();
+
     return;
   }
 
@@ -151,7 +155,7 @@ function renderTerbaru(list) {
             ${formatTanggalSingkat(p.tanggal_pinjam)}
           </div>
         </div>
-        <div>${badge}${telat ? ' <span class="text-xs text-red-600">⚠️</span>' : ''}</div>
+        <div>${badge}${telat ? ' <span class="text-xs text-red-600"><i data-lucide="alert-triangle"></i></span>' : ''}</div>
       </a>
     `;
   }).join('');
@@ -164,6 +168,8 @@ function renderStokMenipis(list) {
   const el = document.getElementById('stok-menipis-list');
   if (!list || !list.length) {
     el.innerHTML = '<div class="text-slate-400 text-sm">Semua stok aman 👍</div>';
+  if (window.lucide) lucide.createIcons();
+
     return;
   }
 

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="view-transition" content="same-origin">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Peminjaman - Perpustakaan Sekolah</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -25,6 +25,8 @@
     .autocomplete-item small { color: #64748b; display: block; margin-top: 2px; }
   </style>
   <script src="/vendor/lucide.min.js"></script>
+  <script>if(window.lucide) lucide.createIcons();</script>
+  <script>if(window.lucide) lucide.createIcons();</script>
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/pengingat.css">
   <link rel="stylesheet" href="/css/print.css" media="print">
@@ -37,35 +39,42 @@
     <aside class="w-60 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col">
       <div class="p-5 border-b border-slate-700">
         <div class="flex items-center gap-2">
-          <img src="/img/logo.png" alt="Logo" style="width:42px;height:42px;object-fit:contain;background:#fff;border-radius:10px;padding:4px;flex-shrink:0;"><div style="display:flex;flex-direction:column;">
+          <img src="/img/logo.png" alt="Logo" style="width:42px;height:42px;object-fit:contain;background:#fff;border-radius:10px;padding:4px;flex-shrink:0;">
+          <div style="display:flex;flex-direction:column;">
             <div class="font-bold text-sm">SMPN 1 Taman</div>
             <div class="text-xs text-slate-400">Sidoarjo</div>
           </div>
         </div>
       </div>
 
-                  <nav class="flex-1 p-3 space-y-1 text-sm">
-        <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300" >
-          <span>🏠</span> <span>Dashboard</span>
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a href="/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i> <span>Dashboard</span>
         </a>
-        <a href="/buku.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300" >
-          <span>📖</span> <span>Buku</span>
+        <a href="/buku.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="book" class="w-5 h-5"></i> <span>Buku</span>
         </a>
-        <a href="/anggota.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300" >
-          <span>👥</span> <span>Anggota</span>
+        <a href="/anggota.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="users" class="w-5 h-5"></i> <span>Anggota</span>
         </a>
-        <a href="/peminjaman.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium" >
-          <span>🔄</span> <span>Peminjaman</span>
+        <a href="/peminjaman.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i> <span>Peminjaman</span>
         </a>
-        <a href="/scan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300"><i data-lucide="scan-line" class="w-5 h-5"></i> <span>Scan Mode</span></a>        <a href="/laporan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300" >
-          <span>📊</span> <span>Laporan</span>
+        <a href="/scan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="scan-line" class="w-5 h-5"></i> <span>Scan Mode</span>
         </a>
-                <a href="/pengaturan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300" >
-          <span>⚙️</span> <span>Pengaturan</span>
+        <a href="/buku-digital.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="tablet" class="w-5 h-5"></i> <span>Buku Digital</span>
+        </a>
+        <a href="/laporan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i> <span>Laporan</span>
+        </a>
+        <a href="/pengaturan.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300">
+          <i data-lucide="settings" class="w-5 h-5"></i> <span>Pengaturan</span>
         </a>
       </nav>
 
-      <div class="p-4 border-t border-slate-700 text-xs text-slate-500">v0.6 — Fase 6</div>
+      <div class="p-4 border-t border-slate-700 text-xs text-slate-500">v1.2.0</div>
     </aside>
 
     <!-- ============ MAIN ============ -->
@@ -85,7 +94,7 @@
       <!-- Toolbar -->
       <div class="bg-white p-4 rounded-lg shadow-sm mb-4 flex flex-wrap gap-3 items-center">
         <div class="flex-1 min-w-[220px] relative">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i data-lucide="search"></i></span>
           <input id="search" type="text" placeholder="Cari kode pinjam, NIS, atau nama..."
             class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
         </div>
@@ -96,7 +105,7 @@
           <option value="dipinjam">Dipinjam</option>
           <option value="sebagian">Sebagian Kembali</option>
           <option value="dikembalikan">Dikembalikan</option>
-          <option value="terlambat">⚠️ Terlambat</option>
+          <option value="terlambat"><i data-lucide="alert-triangle"></i> Terlambat</option>
         </select>
 
         <select id="filter-limit"
@@ -128,7 +137,7 @@
               </tr>
             </thead>
             <tbody id="tabel-body">
-              <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>
+              <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -145,7 +154,7 @@
   <div id="modal-pinjam" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto">
       <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white z-10">
-        <h2 class="text-lg font-bold text-slate-800">📋 Peminjaman Baru</h2>
+        <h2 class="text-lg font-bold text-slate-800"><i data-lucide="clipboard-list"></i> Peminjaman Baru</h2>
         <button id="btn-close-pinjam" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
       </div>
 
@@ -239,7 +248,7 @@
   <!-- Modal Hapus -->
   <div id="modal-hapus" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
-      <div class="text-5xl mb-3">⚠️</div>
+      <div class="text-5xl mb-3"><i data-lucide="alert-triangle"></i></div>
       <h2 class="text-lg font-bold text-slate-800 mb-1">Hapus Peminjaman?</h2>
       <p id="hapus-info" class="text-sm text-slate-500 mb-5"></p>
       <p class="text-xs text-amber-600 mb-5">Stok buku akan dikembalikan.</p>

@@ -128,6 +128,8 @@
           primaryBtn +
         '</div>' +
       '</div>';
+  if (window.lucide) lucide.createIcons();
+
     return overlay;
   }
 
@@ -202,20 +204,28 @@
         }
         if (iconEl)  iconEl.innerHTML  = SVG_CHECK;
         if (titleEl) titleEl.textContent = 'Masa Aktif Berhasil Diperpanjang';
+  if (window.lucide) lucide.createIcons();
+
         if (bodyEl) {
           bodyEl.innerHTML = 'Masa aktif sistem perpustakaan kini berlaku sampai <strong>' +
             json.expired_at + '</strong>.';
+  if (window.lucide) lucide.createIcons();
+
         }
         if (footerEl) {
           footerEl.innerHTML =
             '<button type="button" class="domain-reminder-btn domain-reminder-btn-primary" ' +
               'data-action="dismiss-domain-reminder">OK</button>';
+  if (window.lucide) lucide.createIcons();
+
         }
       } catch (err) {
         trigger.disabled = false;
         trigger.textContent = originalText;
         const bodyEl = document.querySelector('.domain-reminder-body');
         if (bodyEl) bodyEl.innerHTML = '<strong>Gagal terhubung ke server.</strong> Silakan coba lagi.';
+  if (window.lucide) lucide.createIcons();
+
       }
     }
   });

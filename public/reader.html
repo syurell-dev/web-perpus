@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Membaca Buku - Perpustakaan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body, html { height: 100%; margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: #334155; }
+  </style>
+</head>
+<body class="flex flex-col h-screen">
+
+  <!-- Navbar Reader -->
+  <header class="bg-slate-900 text-white h-16 flex-shrink-0 flex items-center justify-between px-4 shadow-md z-20 relative">
+    <div class="flex items-center gap-4">
+      <a href="/portal.html" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition" title="Kembali ke Portal">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+      </a>
+      <div class="hidden md:block">
+        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Buku Digital</div>
+        <div class="font-bold text-sm line-clamp-1" id="book-title">Memuat...</div>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <div id="cache-status" class="hidden text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+        <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Tersimpan
+      </div>
+      <button id="btn-download" class="hidden text-sm bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
+        <i data-lucide="download" class="w-4 h-4"></i> Simpan Offline
+      </button>
+    </div>
+  </header>
+
+  <!-- Area PDF -->
+  <main class="flex-1 relative bg-slate-800 flex items-center justify-center">
+    
+    <!-- Loading Spinner -->
+    <div id="loading-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-0">
+      <div class="w-10 h-10 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
+      <div class="text-slate-400 text-sm font-medium">Menyiapkan halaman...</div>
+    </div>
+
+    <!-- Iframe PDF -->
+    <iframe id="pdf-frame" class="w-full h-full border-none hidden z-10 relative bg-white"></iframe>
+    
+    <!-- TOMBOL MELAYANG (Cadangan jika PDF tidak muncul) -->
+    <div id="fallback-buttons" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-3 bg-slate-900/80 p-3 rounded-2xl backdrop-blur border border-slate-700 shadow-2xl">
+      <button id="btn-open-tab" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 text-sm">
+        <i data-lucide="external-link" class="w-4 h-4"></i> Buka di Tab Baru
+      </button>
+      <button id="btn-download-pc" class="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 text-sm">
+        <i data-lucide="download" class="w-4 h-4"></i> Download File
+      </button>
+    </div>
+    
+  </main>
+
+  <script src="/vendor/lucide.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/reader.js"></script>
+</body>
+</html>

@@ -22,7 +22,9 @@ const state = {
 // ================================================================
 async function loadAnggota() {
   const tbody = document.getElementById('tabel-body');
-  tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">⏳ Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
 
   try {
     const res = await apiGet('/anggota', {
@@ -34,7 +36,9 @@ async function loadAnggota() {
     renderPagination(res.pagination);
     renderKelasDropdown(res.kelas_list);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-red-500">❌ ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle"></i> ${err.message}</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
   }
 }
 
@@ -44,7 +48,9 @@ async function loadAnggota() {
 function renderTabel(list) {
   const tbody = document.getElementById('tabel-body');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">📭 Tidak ada data anggota</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox"></i> Tidak ada data anggota</td></tr>`;
+  if (window.lucide) lucide.createIcons();
+
     return;
   }
 
@@ -86,10 +92,19 @@ function renderTabel(list) {
         <td class="px-4 py-3 text-slate-600">${a.jenis_kelamin || '-'}</td>
         <td class="px-4 py-3 text-slate-600 text-xs">${tglAktif} ${expBadge}</td>
         <td class="px-4 py-3 text-center">${statusBadge}</td>
-        <td class="px-4 py-3">
-          <div class="flex gap-1 justify-center">
-            <button data-action="editAnggota" data-id="${a.id}" title="Edit" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200">✏️</button>
-            <button data-action="konfirmasiHapus" data-id="${a.id}" data-str="${escapeHtml(a.nama)}" title="Hapus" class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200">🗑️</button>
+                <td class="px-4 py-3">
+          <div class="flex gap-1.5 justify-center">
+            <button data-action="editAnggota" data-id="${a.id}" title="Edit" class="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition">
+              <i data-lucide="edit" class="w-4 h-4"></i>
+            </button>
+            <button data-action="resetPassword" data-id="${a.id}" data-str="${escapeHtml(a.nama)}" title="Reset Password" class="p-2 text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition">
+              <i data-lucide="key" class="w-4 h-4"></i>
+            </button>
+            <button data-action="konfirmasiHapus" data-id="${a.id}" data-str="${escapeHtml(a.nama)}" title="Hapus" class="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </td>
           </div>
         </td>
       </tr>
@@ -145,6 +160,8 @@ function openModal(mode = 'tambah', data = null) {
   document.getElementById('modal').classList.remove('hidden');
   document.getElementById('form-anggota').reset();
   document.getElementById('f-id').value = '';
+  if (window.lucide) lucide.createIcons();
+
 
   if (mode === 'edit' && data) {
     document.getElementById('modal-title').textContent = 'Edit Anggota';
@@ -318,7 +335,9 @@ function handleFileCSV(e) {
       document.getElementById('btn-proses-import').disabled = false;
 
       document.getElementById('preview-info').innerHTML =
-        `✅ Terbaca <b>${data.length}</b> baris data. Preview 10 pertama:`;
+        `<i data-lucide="check-circle"></i> Terbaca <b>${data.length}</b> baris data. Preview 10 pertama:`;
+  if (window.lucide) lucide.createIcons();
+
     } catch (err) {
       toast('Gagal baca file: ' + err.message, 'error');
     }
@@ -351,7 +370,7 @@ async function prosesImport() {
     resultEl.classList.remove('hidden');
     resultEl.innerHTML = `
       <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div class="font-semibold text-green-800 mb-2">✅ ${res.message}</div>
+        <div class="font-semibold text-green-800 mb-2"><i data-lucide="check-circle"></i> ${res.message}</div>
         <div class="grid grid-cols-3 gap-3 text-sm">
           <div class="bg-white rounded p-2 text-center">
             <div class="text-2xl font-bold text-green-600">${hasil.sukses}</div>
@@ -377,6 +396,8 @@ async function prosesImport() {
         ` : ''}
       </div>
     `;
+  if (window.lucide) lucide.createIcons();
+
 
     toast(`Import selesai: ${hasil.sukses} sukses`, 'success');
     loadAnggota();
@@ -402,6 +423,18 @@ function downloadTemplate() {
   a.download = 'template_import_anggota.csv';
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+async function resetPassword(id, nama) {
+  const yakin = confirm(`Reset password untuk "${nama}"?\n\nPassword akan kembali menjadi NIS mereka, dan mereka wajib menggantinya saat login.`);
+  if (!yakin) return;
+
+  try {
+    const res = await apiPost(`/anggota/${id}/reset-password`, {});
+    toast(res.message, 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 // ================================================================
@@ -491,6 +524,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnHapus = e.target.closest('[data-action="konfirmasiHapus"]');
     if (btnHapus) return konfirmasiHapus(btnHapus.dataset.id, btnHapus.dataset.str);
     
+    const btnResetPassword = e.target.closest('[data-action="resetPassword"]');
+    if (btnResetPassword) return resetPassword(btnResetPassword.dataset.id, btnResetPassword.dataset.str);
+
     const btnPage = e.target.closest('[data-action="gotoPage"]');
     if (btnPage) return gotoPage(Number(btnPage.dataset.id));
   });

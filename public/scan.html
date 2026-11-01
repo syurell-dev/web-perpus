@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="view-transition" content="same-origin">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mode Scan - Perpustakaan Sekolah</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -158,6 +158,7 @@
 
                 <!-- INPUT -->
         <div class="card" style="padding: 22px;">
+          <!-- Header: Judul & Tombol Kanan Atas -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div class="section-title">
               <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -165,20 +166,29 @@
               </svg>
               Scan Barcode
             </div>
-            <!-- Tombol Paket (Kanan Atas) -->
-            <button id="btn-mode-paket" type="button" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-              Mode Paket
-            </button>
+            
+            <!-- Wadah Tombol Kecil -->
+            <div style="display: flex; gap: 8px;">
+              <button id="btn-mode-nonton" type="button" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="15" x="2" y="3" rx="2" ry="2"/><polygon points="10 9 15 12 10 15 10 9"/></svg>
+                Nonton
+              </button>
+              
+              <button id="btn-mode-paket" type="button" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                Mode Paket
+              </button>
+            </div>
           </div>
 
+          <!-- Input Scan -->
           <input id="scan-input" type="text" autocomplete="off" class="scan-input" placeholder="Scan Buku ATAU Scan NIS...">
           
-          <!-- Tombol Kembalikan (Bawah Input) -->
+          <!-- Tombol Kembalikan (Besar di Bawah) -->
           <div style="margin-top: 16px;">
-            <button id="btn-mode-kembalikan" type="button" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; color: #475569; font-size: 0.9rem; font-weight: 700; cursor: pointer;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-              Mode Kembalikan Buku
+            <button id="btn-mode-perpanjang" type="button" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; border: 2px solid #cbd5e1; background: #fff; color: #475569; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Mode Perpanjang Buku
             </button>
           </div>
         </div>
@@ -265,365 +275,7 @@
   </div>
 
   <script src="/js/api.js"></script>
-  <script>
-  // ================================================================
-  // SVG helper
-  // ================================================================
-  const SVG = {
-    book:   '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
-    check:  '<path d="M20 6 9 17l-5-5"/>',
-    alert:  '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
-    loader: '<path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/>',
-    x:      '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
-    bookSm: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
-    checkSm:'<path d="M20 6 9 17l-5-5"/>'
-  };
-  function svgIcon(name, size) {
-    size = size || 36;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
-                 style="width:${size}px;height:${size}px;">${SVG[name]}</svg>`;
-  }
-
-  const state = { bukuList: [], processing: false, forceReturn: false };
-  async function masukFullscreen() {
-    try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen(); } catch(e){}
-  }
-  function keluar() {
-    if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
-    window.location.href = '/';
-  }
-  document.addEventListener('click', masukFullscreen, { once: true });
-  document.addEventListener('keydown', masukFullscreen, { once: true });
-
-  function escapeHtml(s) {
-    if (s == null) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-  }
-
-  let audioCtx = null;
-  function beep(freq, dur) {
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      o.connect(g); g.connect(audioCtx.destination);
-      o.frequency.value = freq; o.type = 'sine';
-      g.gain.setValueAtTime(0.2, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
-      o.start(); o.stop(audioCtx.currentTime + dur);
-    } catch(e){}
-  }
-  const beepOk   = () => beep(1000, 0.12);
-  const beepErr  = () => { beep(300, 0.25); setTimeout(() => beep(250, 0.25), 150); };
-  const beepWarn = () => beep(600, 0.15);
-  const beepBig  = () => { beepOk(); setTimeout(beepOk, 100); setTimeout(beepOk, 200); };
-
-  function showStatus(text, sub, type) {
-    type = type || 'info';
-    const wrap = document.getElementById('status-icon-wrap');
-    const textEl = document.getElementById('status-text');
-    wrap.className = type === 'info' ? '' : type;
-
-    const iconMap = {
-      info: 'book',
-      success: 'check',
-      error: 'alert',
-      warn: 'alert',
-      processing: 'loader'
-    };
-    wrap.innerHTML = svgIcon(iconMap[type] || 'book', 34);
-
-    textEl.textContent = text;
-    textEl.style.color = type === 'success' ? '#047857'
-                      : type === 'error'   ? '#b91c1c'
-                      : type === 'warn'    ? '#b45309'
-                      : '#0f172a';
-    document.getElementById('status-sub').textContent = sub || '';
-  }
-
-  function addLog(msg, type) {
-    type = type || 'info';
-    const t = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-    const el = document.createElement('div');
-    el.className = 'log-item ' + type;
-    el.innerHTML = `<span class="log-time">${t}</span>${msg}`;
-    const log = document.getElementById('log');
-    log.insertBefore(el, log.firstChild);
-    if (log.children.length > 30) log.lastChild.remove();
-  }
-
-  function renderList() {
-    const box = document.getElementById('list-box');
-    const content = document.getElementById('list-content');
-    if (state.bukuList.length === 0) { box.style.display = 'none'; return; }
-    box.style.display = 'block';
-    document.getElementById('list-count').textContent = state.bukuList.length + ' buku';
-    content.innerHTML = state.bukuList.map((b, i) => `
-      <div class="list-item">
-        <div class="list-num">${i + 1}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:600;color:#0f172a;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            ${escapeHtml(b.judul)}
-          </div>
-          <div style="font-size:0.7rem;color:#64748b;font-family:'JetBrains Mono',monospace;margin-top:2px;">
-            ${escapeHtml(b.kode_buku)}
-          </div>
-        </div>
-        <button onclick="hapusBuku(${b.id})"
-          style="color:#94a3b8;background:none;border:none;cursor:pointer;padding:8px;border-radius:8px;transition:all 0.15s;"
-          onmouseover="this.style.color='#dc2626';this.style.background='#fef2f2';"
-          onmouseout="this.style.color='#94a3b8';this.style.background='transparent';">
-          ${svgIcon('x', 16)}
-        </button>
-      </div>
-    `).join('');
-  }
-
-  function hapusBuku(id) {
-    state.bukuList = state.bukuList.filter(b => b.id !== id);
-    renderList();
-    addLog('Hapus 1 buku dari list', 'warn');
-    document.getElementById('scan-input').focus();
-  }
-
-  async function processScan(kode) {
-    try {
-      const res = await apiGet('/scan/lookup/' + encodeURIComponent(kode));
-      
-      if (res.tipe === 'buku') {
-        if (state.bukuList.find(b => b.id === res.data.id)) {
-          beepWarn(); showStatus('Sudah Discan', res.data.judul, 'warn'); return;
-        }
-        state.bukuList.push({ id: res.data.id, kode_buku: res.data.kode_buku, judul: res.data.judul });
-        beepOk();
-        showStatus('Buku Ditambah', res.data.judul, 'success');
-        addLog('+ ' + escapeHtml(res.data.judul), 'success');
-        renderList();
-        return;
-      }
-      
-      if (res.tipe === 'anggota') {
-        // JIKA SCAN KARTU: Deteksi niat siswa secara otomatis
-        if (state.bukuList.length > 0) {
-          await prosesSemua(res.data, 'pinjam'); // Keranjang ada isi = Niat Pinjam
-        } else {
-          await prosesTamu(res.data, 'baca');    // Keranjang kosong = Niat Baca di Tempat
-        }
-      }
-    } catch (err) {
-      beepErr(); showStatus('Tidak Dikenali', err.message, 'error');
-      addLog(err.message, 'error');
-    }
-  }
-
-  // ================================================================
-  // FUNGSI PINJAM BUKU
-  // ================================================================
-  async function prosesSemua(anggota, niat) {
-    try {
-      showStatus('Memproses...', anggota.nama, 'processing');
-      addLog(escapeHtml(anggota.nama) + ' (' + anggota.nis + ') — proses ' + state.bukuList.length + ' buku', 'info');
-      
-      // 1. Simpan Peminjaman
-            const res = await apiPost('/scan/proses', {
-        anggota_id: anggota.id,
-        buku_list: state.bukuList.map(b => ({ buku_id: b.id, jumlah: 1 })),
-        force_return: state.forceReturn,
-        is_paket: state.isPaket // <--- TAMBAHKAN INI
-      });
-
-      // 2. Catat ke Buku Tamu sebagai 'pinjam'
-      await apiPost('/scan/tamu', { anggota_id: anggota.id, tujuan: 'pinjam' });
-
-      beepBig();
-      const nK = res.pengembalian ? res.pengembalian.length : 0;
-      const nP = res.peminjaman ? res.peminjaman.buku.length : 0;
-      showStatus('Selesai', nK + ' kembali, ' + nP + ' pinjam', 'success');
-      addLog('Selesai — ' + nK + ' kembali, ' + nP + ' pinjam', 'success');
-      tampilkanSukses(anggota, res);
-      
-        state.bukuList = [];
-        state.forceReturn = false;
-        state.isPaket = false;
-        
-        const btnK = document.getElementById('btn-mode-kembalikan');
-        if (btnK) { btnK.style.background = '#fff'; btnK.style.borderColor = '#cbd5e1'; btnK.style.color = '#475569'; }
-        const btnP = document.getElementById('btn-mode-paket');
-        if (btnP) { btnP.style.background = '#f8fafc'; btnP.style.borderColor = '#cbd5e1'; btnP.style.color = '#475569'; }
-        renderList();
-      
-      setTimeout(() => {
-        document.getElementById('modal-sukses').style.display = 'none';
-        showStatus('Siap Scan', 'Scan buku untuk pinjam, atau kartu untuk baca', 'info');
-      }, 3000);
-    } catch (err) {
-      beepErr(); showStatus('Gagal', err.message, 'error');
-      addLog(err.message, 'error');
-    }
-  }
-
-  // ================================================================
-  // FUNGSI BARU: BUKU TAMU (BACA DI TEMPAT)
-  // ================================================================
-  async function prosesTamu(anggota, tujuan = 'baca') {
-    try {
-      const res = await apiPost('/scan/tamu', { anggota_id: anggota.id, tujuan });
-      const teksTujuan = tujuan === 'pinjam' ? 'MEMINJAM BUKU' : 'BACA DI TEMPAT';
-      
-      if (res.tipe === 'masuk') {
-        beepOk(); setTimeout(beepOk, 150);
-        
-        document.getElementById('status-box').className = `card p-8 text-center shadow-lg border-2 transition-all bg-green-50 border-green-300`;
-        document.getElementById('status-icon-wrap').className = 'success';
-        document.getElementById('status-icon-wrap').innerHTML = svgIcon('check', 34);
-        document.getElementById('status-text').className = `text-3xl font-bold mt-4`;
-        document.getElementById('status-text').style.color = '#047857';
-        document.getElementById('status-text').textContent = res.anggota.nama.toUpperCase();
-        
-        document.getElementById('status-sub').innerHTML = `
-          <div class="text-lg mt-2 font-medium">Selamat Datang!</div>
-          <div class="text-sm mt-2 text-slate-500 font-semibold uppercase">${teksTujuan}</div>
-          <div class="text-sm mt-1 text-slate-500">Jam ${res.waktu}</div>
-        `;
-        addLog(`📥 Masuk: ${res.anggota.nama} (${teksTujuan})`, 'success');
-
-      } else if (res.tipe === 'sudah') {
-        beepWarn(); 
-        document.getElementById('status-box').className = `card p-8 text-center shadow-lg border-2 transition-all bg-blue-50 border-blue-300`;
-        document.getElementById('status-icon-wrap').className = 'processing';
-        document.getElementById('status-icon-wrap').innerHTML = svgIcon('alert', 34);
-        document.getElementById('status-text').className = `text-3xl font-bold mt-4`;
-        document.getElementById('status-text').style.color = '#1d4ed8';
-        document.getElementById('status-text').textContent = res.anggota.nama.toUpperCase();
-        
-        document.getElementById('status-sub').innerHTML = `
-          <div class="text-lg mt-2 font-medium">Anda sudah tercatat hari ini.</div>
-          <div class="text-sm mt-1 text-slate-500">Silakan nikmati fasilitas perpustakaan.</div>
-        `;
-        addLog(`ℹ️ ${res.anggota.nama} sudah discan hari ini`, 'info');
-      }
-
-      setTimeout(() => { 
-        showStatus('Siap Scan', 'Scan Buku untuk pinjam, atau Kartu untuk baca', 'info'); 
-      }, 3000);
-
-    } catch (err) {
-      beepErr(); showStatus('Gagal', err.message, 'error');
-    }
-  }
-
-  function tampilkanSukses(anggota, res) {
-    document.getElementById('sukses-sub').textContent =
-      anggota.nama + ' · ' + anggota.nis + (anggota.kelas ? ' · ' + anggota.kelas : '');
-    let html = '';
-    if (res.pengembalian && res.pengembalian.length) {
-      html += `
-        <div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:12px;padding:14px;">
-          <div style="font-weight:700;color:#047857;font-size:0.75rem;margin-bottom:8px;
-                      letter-spacing:0.04em;text-transform:uppercase;">
-            Dikembalikan (${res.pengembalian.length})
-          </div>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;font-size:0.85rem;color:#0f172a;">
-            ${res.pengembalian.map(b => `
-              <li style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-                <span>${escapeHtml(b.judul)}</span>
-                ${b.denda > 0
-                  ? `<span style="color:#dc2626;font-size:0.75rem;font-weight:600;">Rp ${b.denda.toLocaleString('id-ID')}</span>`
-                  : '<span style="color:#059669;font-size:0.75rem;font-weight:600;">OK</span>'}
-              </li>
-            `).join('')}
-          </ul>
-        </div>`;
-    }
-    if (res.peminjaman && res.peminjaman.buku.length) {
-      html += `
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px;">
-          <div style="font-weight:700;color:#1d4ed8;font-size:0.75rem;margin-bottom:8px;
-                      letter-spacing:0.04em;text-transform:uppercase;">
-            Dipinjam (${res.peminjaman.buku.length})
-          </div>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:6px;font-size:0.85rem;color:#0f172a;">
-            ${res.peminjaman.buku.map(b => `<li>${escapeHtml(b.judul)}</li>`).join('')}
-          </ul>
-          <div style="font-size:0.75rem;color:#1d4ed8;margin-top:10px;padding-top:10px;
-                      border-top:1px solid #bfdbfe;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <span>Kode: <b style="font-family:'JetBrains Mono',monospace;">${escapeHtml(res.peminjaman.kode_pinjam)}</b></span>
-            <span>Jatuh tempo: <b>${res.peminjaman.tanggal_jatuh}</b></span>
-          </div>
-        </div>`;
-    }
-    document.getElementById('sukses-detail').innerHTML = html;
-    document.getElementById('modal-sukses').style.display = 'flex';
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-       // --- LOGIKA TOMBOL KEMBALIKAN ---
-   const btnKembali = document.getElementById('btn-mode-kembalikan');
-   if (btnKembali) {
-     btnKembali.addEventListener('click', () => {
-       state.forceReturn = !state.forceReturn;
-       if (state.forceReturn) {
-         btnKembali.style.background = '#fee2e2';
-         btnKembali.style.borderColor = '#fca5a5';
-         btnKembali.style.color = '#b91c1c';
-         addLog('Mode: Pengembalian Buku Aktif', 'warn');
-       } else {
-         btnKembali.style.background = '#fff';
-         btnKembali.style.borderColor = '#cbd5e1';
-         btnKembali.style.color = '#475569';
-         addLog('Mode: Normal (Perpanjang Otomatis)', 'info');
-       }
-     });
-   }
-
-   // --- LOGIKA TOMBOL PAKET ---
-   const btnPaket = document.getElementById('btn-mode-paket');
-   if (btnPaket) {
-     btnPaket.addEventListener('click', () => {
-       state.isPaket = !state.isPaket;
-       if (state.isPaket) {
-         btnPaket.style.background = '#dbeafe';
-         btnPaket.style.borderColor = '#93c5fd';
-         btnPaket.style.color = '#1d4ed8';
-         addLog('Mode: Paket Tahunan Aktif', 'warn');
-       } else {
-         btnPaket.style.background = '#f8fafc';
-         btnPaket.style.borderColor = '#cbd5e1';
-         btnPaket.style.color = '#475569';
-         addLog('Mode: Reguler', 'info');
-       }
-     });
-   }
-   // --- END PATCH ---
-    const input = document.getElementById('scan-input');
-    input.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const kode = input.value.trim();
-        input.value = '';
-        if (!kode || state.processing) return;
-        state.processing = true;
-        try { await processScan(kode); }
-        finally { state.processing = false; input.focus(); }
-      }
-    });
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('button, select, a, input')) input.focus();
-    });
-    setInterval(() => { if (document.activeElement.tagName === 'BODY') input.focus(); }, 1000);
-    document.getElementById('btn-exit').addEventListener('click', keluar);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !document.fullscreenElement) keluar(); });
-    document.getElementById('btn-clear-log').addEventListener('click', () => {
-      document.getElementById('log').innerHTML = '';
-      input.focus();
-    });
-    setTimeout(() => input.focus(), 200);
-    addLog('Mode Scan siap — scan buku dulu, lalu kartu', 'success');
-    
-  });
-
-  window.hapusBuku = hapusBuku;
-  </script>
+  <script src="/js/scan.js"></script>
   <script src="/js/pengingat-domain.js"></script>
 </body>
 </html>
