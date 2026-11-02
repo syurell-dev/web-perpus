@@ -186,4 +186,60 @@ router.post('/reset', (req, res) => {
   }
 });
 
+// ================================================================
+// POST /api/pengaturan/restore — Upload & Restore Database
+// ================================================================
+const multer = require('multer');
+const os = require('os');
+
+// Simpan file upload sementara di folder tmp
+const upload = multer({ dest: os.tmpdir() });
+
+// ================================================================
+// POST /api/pengaturan/restore — Upload & Restore Database
+// ================================================================
+router.post('/restore', upload.single('database_file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'File database tidak ditemukan' });
+    }
+
+    if (!req.file.originalname.endsWith('.db')) {
+      return res.status(400).json({ status: 'error', message: 'File harus berformat .db' });
+    }
+
+    console.log('⏳ Memulai proses restore database...');
+
+    // 1. Tutup koneksi database saat ini agar file tidak terkunci
+    db.close();
+
+    // 2. Timpa file database lama dengan yang baru
+    const fs = require('fs');
+    fs.copyFileSync(req.file.path, DB_PATH);
+
+    // 3. Hapus file temporary
+    fs.unlinkSync(req.file.path);
+
+    console.log('✅ Restore database berhasil. Memicu restart server...');
+
+    // 4. Kirim response ke browser
+    res.json({ 
+      status: 'ok', 
+      message: 'Database berhasil direstore! Halaman akan dimuat ulang...' 
+    });
+
+    // 5. Trik "Sentuh File" agar Nodemon otomatis restart
+    setTimeout(() => {
+      const path = require('path');
+      const now = new Date();
+      // Ubah timestamp server.js agar nodemon mendeteksi ada perubahan
+      fs.utimesSync(path.join(__dirname, '..', 'server.js'), now, now);
+    }, 1000);
+
+  } catch (err) {
+    console.error('❌ Gagal restore database:', err);
+    res.status(500).json({ status: 'error', message: 'Gagal me-restore database: ' + err.message });
+  }
+});
+
 module.exports = router;

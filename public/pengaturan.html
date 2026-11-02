@@ -57,7 +57,26 @@
         </a>
       </nav>
 
-      <div class="p-4 border-t border-slate-700 text-xs text-slate-500">v1.2.0</div>
+      <div class="p-4 border-t border-slate-700">
+        <button id="btn-logout-admin" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm font-medium transition mb-4 border border-red-500/20">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+        </button>
+        <div class="text-center text-xs text-slate-500">v1.2.0</div>
+      </div>
+      
+      <script>
+        // Script otomatis untuk tombol Logout Admin
+        document.getElementById('btn-logout-admin')?.addEventListener('click', async () => {
+          if (confirm('Yakin ingin keluar dari Dashboard Admin?')) {
+            try {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              window.location.href = '/login.html';
+            } catch (err) {
+              alert('Gagal logout, silakan coba lagi.');
+            }
+          }
+        });
+      </script>
     </aside>
 
     <!-- ============ MAIN ============ -->
@@ -251,6 +270,27 @@
                 tinggal replace file <code>perpus.db</code> lama.
               </p>
             </div>
+          </div>
+
+          <!-- Restore Database -->
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-red-100">
+            <h2 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <i data-lucide="upload-cloud" class="w-5 h-5 text-red-500"></i> Restore Database
+            </h2>
+            <p class="text-sm text-slate-500 mb-4">
+              Upload file <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">perpus.db</code> untuk mengembalikan data. 
+              <br><b class="text-red-500">Peringatan:</b> Tindakan ini akan menimpa seluruh data saat ini!
+            </p>
+
+            <form id="form-restore" class="space-y-3">
+              <input type="file" id="file-restore" accept=".db"
+                class="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-red-50 file:text-red-700 hover:file:bg-red-100 border border-slate-200 rounded-lg p-1">
+              
+              <button type="submit" id="btn-restore"
+                class="w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i> Upload & Restore
+              </button>
+            </form>
           </div>
 
           <!-- Info Database -->

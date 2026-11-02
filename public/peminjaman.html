@@ -74,7 +74,26 @@
         </a>
       </nav>
 
-      <div class="p-4 border-t border-slate-700 text-xs text-slate-500">v1.2.0</div>
+      <div class="p-4 border-t border-slate-700">
+        <button id="btn-logout-admin" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm font-medium transition mb-4 border border-red-500/20">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+        </button>
+        <div class="text-center text-xs text-slate-500">v1.2.0</div>
+      </div>
+      
+      <script>
+        // Script otomatis untuk tombol Logout Admin
+        document.getElementById('btn-logout-admin')?.addEventListener('click', async () => {
+          if (confirm('Yakin ingin keluar dari Dashboard Admin?')) {
+            try {
+              await fetch('/api/auth/logout', { method: 'POST' });
+              window.location.href = '/login.html';
+            } catch (err) {
+              alert('Gagal logout, silakan coba lagi.');
+            }
+          }
+        });
+      </script>
     </aside>
 
     <!-- ============ MAIN ============ -->
@@ -233,7 +252,7 @@
       <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white z-10">
         <h2 class="text-lg font-bold text-slate-800">📄 Detail Peminjaman</h2>
         <div class="flex gap-2">
-          <button id="btn-print" class="text-slate-500 hover:text-slate-800 text-sm px-3 py-1 rounded hover:bg-slate-100">🖨️ Cetak</button>
+          <button id="btn-print" class="text-slate-500 hover:text-slate-800 text-sm px-3 py-1 rounded hover:bg-slate-100"><i data-lucide="printer" class="w-4 h-4"></i> Cetak</button>
           <button id="btn-close-detail" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
         </div>
       </div>

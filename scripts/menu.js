@@ -2,6 +2,7 @@ const readline = require('readline');
 const { exec, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os'); // Tambahan untuk deteksi IP
 
 const DB_PATH = path.join(__dirname, '..', 'database', 'perpus.db');
 
@@ -12,6 +13,19 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
+
+// --- FUNGSI DETEKSI IP LOKAL ---
+function getLocalIP() {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
 
 function tampilkanMenu() {
   console.log('\n====================================================');
@@ -24,6 +38,7 @@ function tampilkanMenu() {
   console.log('====================================================');
   if (isServerRunning) {
     console.log(' 🟢 STATUS: SERVER SEDANG BERJALAN');
+    console.log(` 🌐 Akses dari HP: http://${getLocalIP()}:3000`);
     console.log('====================================================');
   }
   rl.setPrompt('👉 Pilih menu (ketik angka lalu Enter): ');
@@ -36,37 +51,38 @@ function startServer() {
     return tampilkanMenu();
   }
   
-  console.log('🚀 Menjalankan Server...');
-  console.log('💡 TIPS: Setiap kali Anda menyimpan file, nodemon akan restart, dan menu ini akan otomatis muncul kembali.\n');
+  const ip = getLocalIP();
+  console.log('\n====================================================');
+  console.log('🚀 MENJALANKAN SERVER...');
+  console.log('💡 TIPS: Jika menu tertutup oleh log server, cukup tekan ENTER untuk memunculkannya lagi.\n');
+  console.log('🌐 AKSES DARI HP / LAPTOP LAIN (Pastikan 1 Wi-Fi):');
+  console.log(`👉 http://${ip}:3000`);
+  console.log('====================================================\n');
   
   isServerRunning = true;
   
   const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   
-  // PENTING: Ubah 'inherit' menjadi 'pipe' agar kita bisa mendengarkan log nodemon
+  // Paksa HOST=0.0.0.0 agar terbuka untuk semua device
   serverProcess = spawn(npmCmd, ['run', 'dev'], { 
     stdio: ['ignore', 'pipe', 'pipe'], 
-    shell: true 
+    shell: true,
+    env: { ...process.env, HOST: '0.0.0.0' } 
   });
 
-  // Listener untuk log normal (stdout)
   serverProcess.stdout.on('data', (data) => {
-    process.stdout.write(data); // Tampilkan log seperti biasa
-    
+    process.stdout.write(data); 
     const text = data.toString();
-    // Jika mendeteksi nodemon restart ATAU server selesai dinyalakan
     if (text.includes('[nodemon] starting') || text.includes('Server jalan di')) {
-      // Beri jeda sedikit agar semua log selesai dicetak
       setTimeout(() => {
         if (isServerRunning) {
-          process.stdout.write('\r\x1b[K'); // Bersihkan baris saat ini
+          process.stdout.write('\r\x1b[K');
           tampilkanMenu();
         }
       }, 300);
     }
   });
 
-  // Listener untuk error (stderr)
   serverProcess.stderr.on('data', (data) => {
     process.stderr.write(data);
   });
@@ -154,7 +170,6 @@ rl.on('line', (line) => {
   }
 });
 
-// Mulai aplikasi
 console.clear();
 console.log('Memuat Terminal Manager...');
 setTimeout(tampilkanMenu, 500);

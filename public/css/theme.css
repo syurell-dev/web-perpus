@@ -661,3 +661,69 @@ svg.lucide {
   vertical-align: middle;
   flex-shrink: 0;
 }
+
+/* =========================================
+   FIX TAMPILAN HP (Standar & Rapi)
+   ========================================= */
+@media (max-width: 768px) {
+  
+  /* 1. Jarak aman agar tidak tertutup tombol menu */
+  main {
+    padding-top: 70px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* 2. Kecilkan Tombol Hamburger (Garis Tiga) */
+  button.fixed, 
+  button.absolute, 
+  button[class*="bg-slate-900"] {
+    width: 40px !important;
+    height: 40px !important;
+    padding: 8px !important;
+    top: 15px !important;
+    left: 16px !important;
+    z-index: 9999 !important;
+  }
+  
+  button.fixed svg, 
+  button.absolute svg,
+  button[class*="bg-slate-900"] svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* 3. Kembalikan Teks Tanggal/Subtitle ke Posisi Normal (Bawah Judul) */
+  main > div:first-child p.text-slate-500 {
+    position: static !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    font-size: 0.9rem !important;
+    text-align: left !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* 4. Jika ada tombol aksi (seperti Import/Export), susun ke bawah */
+  main > div:first-child.flex {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  /* 5. Rapikan tombol-tombol aksi agar tidak menumpuk aneh */
+  main > div:first-child.flex > div:last-child {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  main > div:first-child.flex > div:last-child button,
+  main > div:first-child.flex > div:last-child a {
+    flex: 1 !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+}

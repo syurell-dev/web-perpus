@@ -2,62 +2,120 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Membaca Buku - Perpustakaan</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/theme.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body, html { height: 100%; margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: #334155; }
-  </style>
-</head>
-<body class="flex flex-col h-screen">
+    body { font-family: 'Inter', sans-serif; background: #1e293b; margin: 0; }
+        /* --- ANIMASI SMOOTH (FADE & SLIGHT ZOOM) --- */
+    @keyframes smoothEntry {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    .animate-page {
+      animation: smoothEntry 0.3s ease-out forwards;
+    }
 
-  <!-- Navbar Reader -->
-  <header class="bg-slate-900 text-white h-16 flex-shrink-0 flex items-center justify-between px-4 shadow-md z-20 relative">
-    <div class="flex items-center gap-4">
-      <a href="/portal.html" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition" title="Kembali ke Portal">
+    @keyframes slideInRight {
+      from { opacity: 0.5; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideInLeft {
+      from { opacity: 0.5; transform: translateX(-40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    #pdf-container::-webkit-scrollbar { width: 6px; height: 6px; }
+    #pdf-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    
+    /* Sembunyikan panah atas/bawah di input number */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    
+    .hidden-ui { transform: translateY(-100%); opacity: 0; }
+    .hidden-ui-bottom { transform: translateY(100%); opacity: 0; }
+    header, footer { transition: all 0.3s ease; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header id="reader-header" class="fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-3 z-50 shadow-md">
+    <div class="flex items-center gap-2">
+      <a href="/portal.html" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
       </a>
-      <div class="hidden md:block">
-        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Buku Digital</div>
-        <div class="font-bold text-sm line-clamp-1" id="book-title">Memuat...</div>
+      <div class="hidden md:block ml-2">
+        <div class="font-bold text-sm line-clamp-1 max-w-[200px]" id="book-title">Memuat...</div>
       </div>
     </div>
     
-    <div class="flex items-center gap-3">
-      <div id="cache-status" class="hidden text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5">
-        <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Tersimpan
+    <div class="flex items-center gap-2">
+      <div id="cache-status" class="hidden text-xs font-semibold px-2 py-1.5 rounded-full flex items-center gap-1.5">
+        <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i> Offline
       </div>
-      <button id="btn-download" class="hidden text-sm bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
-        <i data-lucide="download" class="w-4 h-4"></i> Simpan Offline
+      <button id="btn-download" class="hidden text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i> Simpan
+      </button>
+      
+      <!-- Zoom Controls -->
+      <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-1">
+        <button id="zoom-out" class="p-1.5 hover:bg-slate-700 rounded-md transition text-slate-300" title="Perkecil">
+          <i data-lucide="zoom-out" class="w-4 h-4"></i>
+        </button>
+        <button id="zoom-in" class="p-1.5 hover:bg-slate-700 rounded-md transition text-slate-300" title="Perbesar">
+          <i data-lucide="zoom-in" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <button id="btn-fullscreen" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition text-slate-300" title="Layar Penuh">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
 
-  <!-- Area PDF -->
-  <main class="flex-1 relative bg-slate-800 flex items-center justify-center">
-    
-    <!-- Loading Spinner -->
-    <div id="loading-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-0">
-      <div class="w-10 h-10 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
-      <div class="text-slate-400 text-sm font-medium">Menyiapkan halaman...</div>
-    </div>
+  <!-- MAIN AREA -->
+  <main id="reader-main" class="pt-16 pb-24 h-screen box-border transition-all duration-300">
+    <div id="pdf-container" class="w-full h-full overflow-auto flex justify-center p-4">
+      
+      <div id="loading-screen" class="fixed inset-0 flex flex-col items-center justify-center bg-slate-900 z-40">
+        <div class="w-10 h-10 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
+        <div class="text-slate-400 text-sm font-medium" id="loading-text">Menyiapkan dokumen...</div>
+      </div>
 
-    <!-- Iframe PDF -->
-    <iframe id="pdf-frame" class="w-full h-full border-none hidden z-10 relative bg-white"></iframe>
-    
-    <!-- TOMBOL MELAYANG (Cadangan jika PDF tidak muncul) -->
-    <div id="fallback-buttons" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-3 bg-slate-900/80 p-3 rounded-2xl backdrop-blur border border-slate-700 shadow-2xl">
-      <button id="btn-open-tab" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 text-sm">
-        <i data-lucide="external-link" class="w-4 h-4"></i> Buka di Tab Baru
-      </button>
-      <button id="btn-download-pc" class="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 text-sm">
-        <i data-lucide="download" class="w-4 h-4"></i> Download File
-      </button>
+      <!-- Canvas -->
+      <canvas id="pdf-canvas" class="shadow-2xl bg-white h-max pointer-events-none"></canvas>
     </div>
-    
   </main>
+
+  <!-- FOOTER NAVIGASI -->
+  <footer id="reader-footer" class="fixed bottom-0 left-0 right-0 h-20 bg-slate-900 text-white flex items-center justify-center px-4 z-50 border-t border-slate-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+    <div class="flex items-center justify-between w-full max-w-xs md:max-w-sm">
+      
+      <button id="prev-page" class="p-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition">
+        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+      </button>
+      
+      <!-- Kotak Input Halaman -->
+      <div class="flex items-center gap-2 text-sm font-medium bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition">
+        <span class="text-slate-400">Hal</span>
+        <input type="number" id="page-input" min="1" value="1" class="w-10 bg-transparent text-center text-emerald-400 font-bold focus:outline-none">
+        <span class="text-slate-400">/ <span id="page-count" class="text-white">-</span></span>
+      </div>
+
+      <button id="next-page" class="p-3 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition">
+        <i data-lucide="chevron-right" class="w-6 h-6"></i>
+      </button>
+      
+    </div>
+  </footer>
 
   <script src="/vendor/lucide.min.js"></script>
   <script src="/js/api.js"></script>

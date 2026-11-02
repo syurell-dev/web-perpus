@@ -379,4 +379,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') document.getElementById('modal-reset').classList.add('hidden');
   });
+
+    // --- LOGIKA RESTORE DATABASE ---
+  const formRestore = document.getElementById('form-restore');
+  if (formRestore) {
+    formRestore.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const fileInput = document.getElementById('file-restore');
+      const file = fileInput.files[0];
+      if (!file) return toast('Pilih file database (.db) terlebih dahulu!', 'warning');
+
+      const konfirmasi = confirm("⚠️ PERINGATAN KERAS ⚠️\n\nAnda akan menimpa SELURUH DATA saat ini dengan file yang Anda upload.\n\nApakah Anda yakin?");
+      if (!konfirmasi) return;
+
+      const btn = document.getElementById('btn-restore');
+      btn.disabled = true;
+      btn.innerHTML = `<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Memproses...`;
+
+      const formData = new FormData();
+      formData.append('database_file', file);
+
+      try {
+        // Kirim via fetch (bukan apiPost karena FormData)
+        const res = await fetch('/api/pengaturan/restore', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || 'Gagal restore');
+
+        alert(data.message + '\n\nHalaman akan dimuat ulang.');
+        window.location.href = '/login.html';
+        
+      } catch (err) {
+        toast(err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="upload" class="w-4 h-4"></i> Upload & Restore`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+  }
+
 });

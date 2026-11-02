@@ -315,7 +315,7 @@ async function prosesTamu(anggota, tujuan = 'baca') {
         <div class="text-sm mt-2 text-slate-500 font-semibold uppercase">${teksTujuan}</div>
         <div class="text-sm mt-1 text-slate-500">Jam ${res.waktu}</div>
       `;
-      addLog(`📥 Masuk: ${res.anggota.nama} (${teksTujuan})`, 'success');
+      addLog(`<i data-lucide="download" class="w-4 h-4"></i> Masuk: ${res.anggota.nama} (${teksTujuan})`, 'success');
 
     } else if (res.tipe === 'sudah') {
       beepWarn(); 

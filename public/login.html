@@ -236,6 +236,60 @@
       .login-card { padding: 36px 28px; border-radius: 20px; }
       .brand-text h1 { font-size: 1.3rem; }
     }
+
+        /* =========================================
+       KHUSUS TAMPILAN HP (Mobile Responsive)
+       ========================================= */
+    @media (max-width: 768px) {
+      body {
+        padding: 12px;
+        align-items: flex-start; /* Agar tidak terpotong saat keyboard muncul */
+        padding-top: 40px;
+      }
+      .login-card {
+        padding: 24px 20px;
+        border-radius: 16px;
+        max-width: 100%;
+      }
+      .brand-logo {
+        width: 48px;
+        height: 48px;
+      }
+      .brand-text h1 {
+        font-size: 1.3rem;
+      }
+      .brand-text p {
+        font-size: 0.75rem;
+      }
+      .subtitle {
+        font-size: 0.85rem;
+        margin-top: 12px;
+        margin-bottom: 20px;
+      }
+      .field label {
+        font-size: 0.75rem;
+        margin-bottom: 6px;
+      }
+      .input-wrap input {
+        padding: 12px 14px 12px 40px;
+        font-size: 0.9rem;
+      }
+      .input-icon {
+        left: 12px;
+        width: 16px;
+        height: 16px;
+      }
+      .btn-submit {
+        padding: 12px;
+        font-size: 0.9rem;
+        margin-top: 4px;
+      }
+      .footer {
+        margin-top: 20px;
+        padding-top: 16px;
+        font-size: 0.7rem;
+      }
+    }
   </style>
   <link rel="stylesheet" href="/css/print.css" media="print">
 </head>
