@@ -53,21 +53,49 @@ jobs:
           fi
           echo "✅ Binary Windows OK"
 
+      - name: Create helper for IP
+        run: |
+          cat > build-portable/get-ip.js << 'EOF'
+          const os = require('os');
+          const nets = os.networkInterfaces();
+          for (const name of Object.keys(nets)) {
+            for (const net of nets[name]) {
+              if (net.family === 'IPv4' && !net.internal) {
+                console.log(net.address);
+                process.exit(0);
+              }
+            }
+          }
+          console.log('127.0.0.1');
+          EOF
+
       - name: Create start.bat
         run: |
           cat > build-portable/start.bat << 'EOF'
           @echo off
           title Perpustakaan SMPN 1 Taman
           cd /d "%~dp0"
+          color 0A
+          cls
+
+          :: Dapatkan IP Address Wi-Fi menggunakan Node.exe bawaan
+          for /f "delims=" %%i in ('node.exe get-ip.js') do set LOCAL_IP=%%i
+
           echo.
-          echo  ========================================
+          echo  ====================================================
           echo   PERPUSTAKAAN SMPN 1 TAMAN SIDOARJO
-          echo  ========================================
+          echo  ====================================================
           echo.
-          echo  Server berjalan di: http://localhost:3000
+          echo  Akses dari Komputer ini:
+          echo    http://localhost:3000
+          echo.
+          echo  Akses dari HP / Perangkat lain (Pastikan 1 Wi-Fi):
+          echo    http://%LOCAL_IP%:3000
+          echo.
+          echo  ====================================================
           echo  Tekan Ctrl+C untuk mematikan server.
           echo.
-          timeout /t 2 /nobreak >nul
+          timeout /t 3 /nobreak >nul
           start "" http://localhost:3000
           node.exe app\server.js
           pause
