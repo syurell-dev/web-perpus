@@ -98,8 +98,6 @@ function checkMasaAktifAnggota() {
 checkMasaAktifAnggota();
 setInterval(checkMasaAktifAnggota, 60 * 60 * 1000);
 
-app.listen(PORT, HOST, () => {
-  console.log('====================================');
-  console.log(`✅ Server jalan di http://${HOST}:${PORT}`);
-  console.log('====================================');
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server berjalan di http://0.0.0.0:${PORT}`);
 });
