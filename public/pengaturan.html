@@ -166,18 +166,28 @@
               Pilih anggota untuk generate kartu dengan QR code. Bisa dicetak langsung atau save PDF.
             </p>
 
+                        <!-- Cetak Perorangan -->
             <div class="flex flex-wrap gap-3 items-center mb-4">
               <select id="pilih-anggota"
                 class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[300px]">
                 <option value="">-- Pilih Anggota --</option>
               </select>
               <button id="btn-cetak-kartu" disabled
-  class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium flex items-center gap-2">
-  <i data-lucide="printer" class="w-4 h-4"></i> Cetak Kartu
-</button>
+                class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium flex items-center gap-2">
+                <i data-lucide="printer" class="w-4 h-4"></i> Cetak Kartu
+              </button>
+            </div>
+
+            <!-- Cetak Per Kelas -->
+            <div class="flex flex-wrap gap-3 items-center mb-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <div class="text-sm font-medium text-slate-700 mr-2">Cetak Massal per Kelas:</div>
+              <select id="pilih-kelas"
+                class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]">
+                <option value="">-- Pilih Kelas --</option>
+              </select>
               <button id="btn-cetak-semua"
                 class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
-                <i data-lucide="printer" class="w-4 h-4"></i> Cetak Semua (10 pertama)
+                <i data-lucide="printer" class="w-4 h-4"></i> Cetak Semua Kelas Ini
               </button>
             </div>
             

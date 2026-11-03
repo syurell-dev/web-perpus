@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kelola Anggota - Perpustakaan Sekolah</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/vendor/lucide.min.js"></script>
   <script>if(window.lucide) lucide.createIcons();</script>
@@ -96,6 +97,10 @@
           <button id="btn-tambah"
             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium flex items-center gap-2 shadow-sm">
             <span class="text-lg">＋</span> Tambah
+          </button>
+          <button id="btn-import-bulk"
+            class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg font-medium flex items-center gap-2 shadow-sm">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Import Excel
           </button>
         </div>
       </div>
@@ -319,6 +324,61 @@
       <div class="flex gap-2">
         <button id="btn-cancel-hapus" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm hover:bg-slate-100">Batal</button>
         <button id="btn-konfirmasi-hapus" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL IMPORT EXCEL MASSAL ============ -->
+  <div id="modal-bulk" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white z-10">
+        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i data-lucide="file-spreadsheet" class="w-5 h-5 text-amber-600"></i>
+          Import Excel Massal
+        </h2>
+        <button id="btn-close-bulk" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
+      </div>
+      <div class="p-6 space-y-4">
+
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm">
+          <p class="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+            <i data-lucide="info" class="w-4 h-4"></i> Info
+          </p>
+          <ul class="list-disc list-inside text-amber-700 space-y-1 text-xs leading-relaxed">
+            <li>Upload file Excel <b>.xlsx</b> yang berisi daftar siswa.</li>
+            <li>Sistem otomatis mendeteksi kolom <b>NO. INDUK, Nama Siswa, L/P, dan Kelas</b>.</li>
+            <li>Bisa handle <b>banyak sheet & banyak kelas</b> dalam satu file.</li>
+            <li>Proses bertahap 100 siswa per batch dengan progress bar yang jujur.</li>
+          </ul>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">1. Upload File Excel (.xlsx / .xls)</label>
+          <input type="file" id="bulk-file" accept=".xlsx,.xls"
+            class="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 border border-slate-200 rounded-lg p-1">
+        </div>
+
+        <div id="bulk-preview" class="hidden bg-slate-50 border border-slate-200 rounded-lg p-4"></div>
+
+        <div>
+          <button id="btn-start-bulk" disabled
+            class="w-full px-4 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2">
+            <i data-lucide="play" class="w-4 h-4"></i> Mulai Import
+          </button>
+        </div>
+
+        <div id="bulk-progress" class="hidden space-y-2">
+          <div class="flex justify-between text-xs text-slate-600">
+            <span id="bulk-progress-text">Memulai...</span>
+            <span id="bulk-progress-pct" class="font-bold">0%</span>
+          </div>
+          <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+            <div id="bulk-progress-bar" class="h-full bg-amber-500 transition-all duration-200" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div id="bulk-result" class="hidden"></div>
+
       </div>
     </div>
   </div>

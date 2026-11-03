@@ -14,7 +14,8 @@ const state = {
   deleteId: null,
   deleteNama: '',
   csvData: [],       // hasil parse CSV
-  csvHeaders: []
+  csvHeaders: [],
+  bulkStudents: [] // <--- TAMBAHKAN
 };
 
 // ================================================================
@@ -368,17 +369,21 @@ async function prosesImport() {
 
     const resultEl = document.getElementById('import-result');
     resultEl.classList.remove('hidden');
-    resultEl.innerHTML = `
+        resultEl.innerHTML = `
       <div class="bg-green-50 border border-green-200 rounded-lg p-4">
         <div class="font-semibold text-green-800 mb-2"><i data-lucide="check-circle"></i> ${res.message}</div>
-        <div class="grid grid-cols-3 gap-3 text-sm">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <div class="bg-white rounded p-2 text-center">
             <div class="text-2xl font-bold text-green-600">${hasil.sukses}</div>
-            <div class="text-xs text-slate-500">Sukses</div>
+            <div class="text-xs text-slate-500">Baru</div>
+          </div>
+          <div class="bg-white rounded p-2 text-center">
+            <div class="text-2xl font-bold text-blue-600">${hasil.diperbarui || 0}</div>
+            <div class="text-xs text-slate-500">Diperbarui</div>
           </div>
           <div class="bg-white rounded p-2 text-center">
             <div class="text-2xl font-bold text-amber-600">${hasil.duplikat}</div>
-            <div class="text-xs text-slate-500">Duplikat (skip)</div>
+            <div class="text-xs text-slate-500">Sama (skip)</div>
           </div>
           <div class="bg-white rounded p-2 text-center">
             <div class="text-2xl font-bold text-red-600">${hasil.gagal}</div>
@@ -399,8 +404,7 @@ async function prosesImport() {
   if (window.lucide) lucide.createIcons();
 
 
-    toast(`Import selesai: ${hasil.sukses} sukses`, 'success');
-    loadAnggota();
+    toast(`Import: ${hasil.sukses} baru, ${hasil.diperbarui || 0} diperbarui, ${hasil.duplikat} sama, ${hasil.gagal} gagal`, 'success');    loadAnggota();
   } catch (err) {
     toast(err.message, 'error');
   } finally {
@@ -423,6 +427,209 @@ function downloadTemplate() {
   a.download = 'template_import_anggota.csv';
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+// ================================================================
+// IMPORT EXCEL MASSAL
+// ================================================================
+function parseExcelFile(file) {
+  return new Promise((resolve, reject) => {
+    if (typeof XLSX === 'undefined') {
+      return reject(new Error('Library Excel belum dimuat. Periksa koneksi internet.'));
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const students = [];
+        const seenNis = new Set();
+
+        workbook.SheetNames.forEach(sheetName => {
+          const sheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+          // Hanya proses sheet yang punya header kolom student sebenarnya
+          const hasStudentHeader = rows.some(row => {
+            const rowStr = row.map(c => String(c || '').toLowerCase()).join(' ');
+            return rowStr.includes('nama siswa') &&
+                   (rowStr.includes('no. induk') || rowStr.includes('no induk') || rowStr.includes('no.induk'));
+          });
+          if (!hasStudentHeader) return;
+
+          let currentKelas = '';
+
+          rows.forEach(row => {
+            const cells = row.map(c => String(c || '').trim());
+            if (cells.length === 0) return;
+
+            // Deteksi "Kelas : VIII-A"
+            const kelasIdx = cells.findIndex(c => c.toLowerCase() === 'kelas');
+            if (kelasIdx !== -1) {
+              for (const cell of cells) {
+                const m = cell.match(/(VIII|VII|IX)\s*[-]?\s*([A-K])\b/i);
+                if (m) {
+                  currentKelas = `${m[1].toUpperCase()}-${m[2].toUpperCase()}`;
+                  break;
+                }
+              }
+              return;
+            }
+
+            // Deteksi baris siswa: [No, NO.INDUK, NISN, Nama, L/P, ...]
+            if (cells.length >= 5 && currentKelas) {
+              const c0 = cells[0], c1 = cells[1], c3 = cells[3], c4 = cells[4];
+              if (/^\d+$/.test(c0) &&
+                  /^\d{3,}$/.test(c1) &&
+                  c3 && c3.length >= 2 && c3 !== '-' &&
+                  /^[LP]$/i.test(c4)) {
+                if (!seenNis.has(c1)) {
+                  seenNis.add(c1);
+                  students.push({
+                    nis: c1,
+                    nama: c3,
+                    jenis: 'siswa',
+                    kelas: currentKelas,
+                    jenis_kelamin: c4.toUpperCase()
+                  });
+                }
+              }
+            }
+          });
+        });
+
+        resolve(students);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('Gagal membaca file Excel'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function updateBulkPreview() {
+  const fileInput = document.getElementById('bulk-file');
+  const previewEl = document.getElementById('bulk-preview');
+  const startBtn = document.getElementById('btn-start-bulk');
+
+  if (!fileInput.files[0]) {
+    previewEl.classList.add('hidden');
+    startBtn.disabled = true;
+    state.bulkStudents = [];
+    return;
+  }
+
+  previewEl.classList.remove('hidden');
+  previewEl.innerHTML = `<div class="text-slate-500 text-sm flex items-center gap-2"><i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Membaca file Excel...</div>`;
+  if (window.lucide) lucide.createIcons();
+
+  try {
+    const students = await parseExcelFile(fileInput.files[0]);
+    state.bulkStudents = students;
+
+    if (students.length === 0) {
+      previewEl.innerHTML = `<div class="text-red-600 font-semibold text-sm">❌ Tidak ada data siswa terdeteksi. Pastikan file Excel memiliki kolom: <b>No. Urut, NO. INDUK, NISN, Nama Siswa, L/P</b>.</div>`;
+      startBtn.disabled = true;
+      return;
+    }
+
+    const kelasSet = new Set(students.map(s => s.kelas));
+    const kelasList = [...kelasSet].sort().join(', ');
+    const preview5 = students.slice(0, 5).map(s =>
+      `<div class="text-[11px] font-mono text-slate-600">${s.nis} · ${s.nama} · ${s.kelas} · ${s.jenis_kelamin}</div>`
+    ).join('');
+
+    previewEl.innerHTML = `
+      <div class="font-semibold text-emerald-700 mb-1 text-sm">✅ Terdeteksi ${students.length} siswa dari ${kelasSet.size} kelas</div>
+      <div class="text-slate-500 text-[10px] mb-3 break-words">Kelas: ${kelasList}</div>
+      <div class="text-slate-500 mb-1 text-[10px] uppercase tracking-wide font-semibold">Preview 5 pertama:</div>
+      <div class="space-y-0.5">${preview5}</div>
+    `;
+    startBtn.disabled = false;
+  } catch (err) {
+    previewEl.innerHTML = `<div class="text-red-600 font-semibold text-sm">❌ ${err.message}</div>`;
+    startBtn.disabled = true;
+  }
+}
+
+async function startBulkImport() {
+  const students = state.bulkStudents;
+  if (!students.length) return toast('Tidak ada data untuk diimport', 'warning');
+
+  const startBtn = document.getElementById('btn-start-bulk');
+  const progressEl = document.getElementById('bulk-progress');
+  const progressBar = document.getElementById('bulk-progress-bar');
+  const progressText = document.getElementById('bulk-progress-text');
+  const progressPct = document.getElementById('bulk-progress-pct');
+  const resultEl = document.getElementById('bulk-result');
+
+  startBtn.disabled = true;
+  progressEl.classList.remove('hidden');
+  resultEl.classList.add('hidden');
+
+  const total = students.length;
+  const BATCH_SIZE = 100;
+    let processed = 0, sukses = 0, diperbarui = 0, duplikat = 0, gagal = 0;
+
+  for (let i = 0; i < total; i += BATCH_SIZE) {
+    const batch = students.slice(i, i + BATCH_SIZE);
+    try {
+      const res = await apiPost('/anggota/import', { rows: batch });
+      sukses     += res.hasil.sukses;
+      diperbarui += res.hasil.diperbarui || 0;
+      duplikat   += res.hasil.duplikat;
+      gagal      += res.hasil.gagal;
+    } catch (err) {
+      gagal += batch.length;
+    }
+
+    processed += batch.length;
+    const pct = Math.round((processed / total) * 100);
+    progressBar.style.width = pct + '%';
+    progressText.textContent = `Batch ${Math.ceil(processed / BATCH_SIZE)} dari ${Math.ceil(total / BATCH_SIZE)} · ${processed} / ${total} siswa`;
+    progressPct.textContent = pct + '%';
+
+    // Beri napas browser untuk render progress (loading jujur)
+    await new Promise(r => setTimeout(r, 40));
+  }
+
+  progressText.textContent = '✅ Import selesai!';
+  progressBar.style.background = '#10b981';
+
+  resultEl.classList.remove('hidden');
+  resultEl.innerHTML = `
+    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+      <div class="font-bold text-emerald-800 mb-3 flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-5 h-5"></i> Import Selesai
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div class="bg-white rounded-lg p-3 text-center border border-emerald-100">
+          <div class="text-2xl font-bold text-emerald-600">${sukses}</div>
+          <div class="text-[10px] text-slate-500 uppercase font-semibold">Baru</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 text-center border border-blue-100">
+          <div class="text-2xl font-bold text-blue-600">${diperbarui}</div>
+          <div class="text-[10px] text-slate-500 uppercase font-semibold">Diperbarui</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 text-center border border-amber-100">
+          <div class="text-2xl font-bold text-amber-600">${duplikat}</div>
+          <div class="text-[10px] text-slate-500 uppercase font-semibold">Duplikat</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 text-center border border-red-100">
+          <div class="text-2xl font-bold text-red-600">${gagal}</div>
+          <div class="text-[10px] text-slate-500 uppercase font-semibold">Gagal</div>
+        </div>
+      </div>
+    </div>
+  `;
+  if (window.lucide) lucide.createIcons();
+
+  toast(`Import: ${sukses} baru, ${diperbarui} diperbarui, ${duplikat} sama, ${gagal} gagal`, 'success');
+  loadAnggota();
+
+  state.bulkStudents = [];
+  startBtn.disabled = true;
 }
 
 async function resetPassword(id, nama) {
@@ -460,6 +667,25 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('file-csv').addEventListener('change', handleFileCSV);
   document.getElementById('btn-proses-import').addEventListener('click', prosesImport);
   document.getElementById('btn-download-template').addEventListener('click', downloadTemplate);
+
+    // --- IMPORT EXCEL MASSAL ---
+  document.getElementById('btn-import-bulk')?.addEventListener('click', () => {
+    document.getElementById('modal-bulk').classList.remove('hidden');
+    document.getElementById('bulk-file').value = '';
+    document.getElementById('bulk-preview').classList.add('hidden');
+    document.getElementById('bulk-progress').classList.add('hidden');
+    document.getElementById('bulk-result').classList.add('hidden');
+    document.getElementById('btn-start-bulk').disabled = true;
+    state.bulkStudents = [];
+    if (window.lucide) lucide.createIcons();
+  });
+
+  document.getElementById('btn-close-bulk')?.addEventListener('click', () => {
+    document.getElementById('modal-bulk').classList.add('hidden');
+  });
+
+  document.getElementById('bulk-file')?.addEventListener('change', updateBulkPreview);
+  document.getElementById('btn-start-bulk')?.addEventListener('click', startBulkImport);
 
   // Export
   document.getElementById('btn-export').addEventListener('click', () => {

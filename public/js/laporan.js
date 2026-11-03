@@ -4,6 +4,60 @@ const state = {
   bukuData: []
 };
 
+// ================================================================
+// HELPER: FUNGSI CETAK VIA IFRAME (ANTI-KONFLIK)
+// ================================================================
+function cetakDalamIframe(htmlContent, isLandscape = false) {
+  const iframe = document.createElement('iframe');
+  // Posisikan iframe di luar layar, tapi JANGAN 0x0 agar browser tetap merendernya
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-9999px'; 
+  iframe.style.top = '-9999px';
+  iframe.style.width = '1024px'; 
+  iframe.style.height = '768px';
+  iframe.style.border = 'none';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  
+  // Load CSS print bawaan
+  const cssLink = `<link rel="stylesheet" href="/css/print.css" media="print">`;
+
+  doc.open();
+  doc.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Cetak Laporan</title>
+      ${cssLink}
+      <style>
+        @page { 
+          size: A4 ${isLandscape ? 'landscape' : 'portrait'}; 
+          margin: ${isLandscape ? '0' : '1cm'}; 
+        }
+        body { margin: 0; padding: 0; background: #fff; }
+        /* Paksa print-area tampil */
+        #print-area { display: block !important; }
+      </style>
+    </head>
+    <body>
+      <!-- BUNGKUS DENGAN #print-area AGAR TIDAK DI-HIDE OLEH print.css -->
+      <div id="print-area">
+        ${htmlContent}
+      </div>
+    </body>
+    </html>
+  `);
+  doc.close();
+
+  // Beri waktu CSS termuat, lalu print
+  setTimeout(() => {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(() => document.body.removeChild(iframe), 1000);
+  }, 500);
+}
+
 function todayStr() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -287,7 +341,7 @@ async function printLaporan() {
       </tr>
     `).join('');
 
-    document.getElementById('print-area').innerHTML = `
+    const htmlContent = `
       <div class="print-page" style="font-family: 'Times New Roman', Times, serif;">
         ${getPrintHeader('LAPORAN PEMINJAMAN BUKU')}
         <table class="print-table">
@@ -303,9 +357,7 @@ async function printLaporan() {
               <th style="width: 12%; text-align: right;">Denda</th>
             </tr>
           </thead>
-          <tbody>
-            ${rowsHTML || '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>'}
-          </tbody>
+          <tbody>${rowsHTML || '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>'}</tbody>
         </table>
         <div class="print-summary">
           <div class="row"><span>Total Transaksi:</span> <strong>${res.rekap.total_transaksi}</strong></div>
@@ -321,8 +373,8 @@ async function printLaporan() {
         </div>
       </div>
     `;
-    if (window.lucide) lucide.createIcons();
-    window.print();
+
+    cetakDalamIframe(htmlContent); // <-- Panggil fungsi iframe
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -349,7 +401,7 @@ async function printKunjungan() {
       </tr>
     `}).join('');
 
-    document.getElementById('print-area').innerHTML = `
+    const htmlContent = `
       <div class="print-page" style="font-family: 'Times New Roman', Times, serif;">
         ${getPrintHeader('LAPORAN BUKU TAMU')}
         <table class="print-table">
@@ -364,9 +416,7 @@ async function printKunjungan() {
               <th style="width: 15%; text-align: center;">Tujuan</th>
             </tr>
           </thead>
-          <tbody>
-            ${rowsHTML || '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>'}
-          </tbody>
+          <tbody>${rowsHTML || '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>'}</tbody>
         </table>
         <div class="print-summary">
           <div class="row"><span>Total Pengunjung:</span> <strong>${res.rekap.total}</strong></div>
@@ -382,8 +432,8 @@ async function printKunjungan() {
         </div>
       </div>
     `;
-    if (window.lucide) lucide.createIcons();
-    window.print();
+
+    cetakDalamIframe(htmlContent); // <-- Panggil fungsi iframe
   } catch (err) { toast(err.message, 'error'); }
 }
 
@@ -392,60 +442,80 @@ async function printLaporanPaket() {
     const res = await apiGet('/laporan/paket');
     if (!res.data.length) return toast('Tidak ada data untuk dicetak', 'warning');
     
-    const pages = res.data.map(s => {
-      const isLengkap = s.status_lengkap;
-      const teksStatus = isLengkap ? 'LENGKAP' : 'BELUM LENGKAP';
-      const warnaStatus = isLengkap ? '#059669' : '#dc2626';
-      const sisa = s.total_pinjam - s.total_kembali;
-      
-      return `
-        <div class="print-page" style="page-break-after: always; position: relative; min-height: 90vh; font-family: 'Times New Roman', Times, serif;">
-          <div style="text-align: center; border-bottom: 2pt double #000; padding-bottom: 10pt; margin-bottom: 20pt;">
-            <h1 style="font-size: 18pt; margin: 0; text-transform: uppercase;">SMP NEGERI 1 TAMAN</h1>
-            <h2 style="font-size: 14pt; margin: 5pt 0 0 0; font-weight: normal;">PERPUSTAKAAN SEKOLAH</h2>
-          </div>
-          <h2 style="font-size: 14pt; margin-bottom: 20pt; text-align: center; text-decoration: underline;">SURAT KETERANGAN BEBAS PUSTAKA</h2>
-          <p style="font-size: 11pt; margin-bottom: 20pt; line-height: 1.5;">
-            Yang bertanda tangan di bawah ini, Kepala Perpustakaan SMP Negeri 1 Taman, menerangkan dengan sesungguhnya bahwa:
-          </p>
-          <table style="font-size: 11pt; text-align: left; margin-bottom: 30pt; line-height: 1.5; width: 80%; margin-left: 20pt;">
-            <tr><td style="width: 150pt;">Nama</td><td>: <strong>${escapeHtml(s.nama)}</strong></td></tr>
-            <tr><td>NIS</td><td>: ${escapeHtml(s.nis)}</td></tr>
-            <tr><td>Kelas</td><td>: ${escapeHtml(s.kelas) || '-'}</td></tr>
-            <tr><td>Total Buku Paket</td><td>: ${s.total_pinjam} Buku</td></tr>
-            ${!isLengkap ? `<tr><td>Kekurangan</td><td>: <strong style="color: red;">${sisa} Buku belum dikembalikan</strong></td></tr>` : ''}
-          </table>
-          <p style="font-size: 11pt; margin-bottom: 15pt;">
-            Berdasarkan data sistem perpustakaan, siswa tersebut dinyatakan:
-          </p>
-          <div style="text-align: center; margin: 20pt 0 10pt 0;">
-            <h1 style="font-size: 36pt; color: ${warnaStatus}; margin: 0; font-weight: bold; letter-spacing: 2px; border: 4px solid ${warnaStatus}; padding: 10pt 30pt; display: inline-block; transform: rotate(-3deg); font-family: Arial, sans-serif;">
-              ${teksStatus}
-            </h1>
-          </div>
-          <p style="font-size: 11pt; margin-bottom: 20pt; text-align: center;">
-            dalam menyelesaikan peminjaman dan pengembalian seluruh buku paket.
-          </p>
-          ${!isLengkap && s.buku_belum_kembali ? `
-            <div style="margin: 0 auto 30pt auto; border: 1px dashed #666; padding: 12pt; background: #fafafa; text-align: left; width: 80%; font-family: 'Times New Roman', Times, serif;">
-              <strong style="font-size: 11pt; display: block; margin-bottom: 8pt; text-align: center;">Lampiran: Daftar Buku Paket yang Belum Dikembalikan</strong>
-              <ul style="font-size: 11pt; margin: 0; padding-left: 30pt; line-height: 1.5;">
-                ${s.buku_belum_kembali.split(', ').map(b => `<li>${escapeHtml(b)}</li>`).join('')}
-              </ul>
+    let pagesHTML = '';
+
+    for (let i = 0; i < res.data.length; i += 2) {
+      const s1 = res.data[i];
+      const s2 = res.data[i + 1];
+
+      const renderIjazah = (s) => {
+        if (!s) return ''; 
+        const isLengkap = s.status_lengkap;
+        const teksStatus = isLengkap ? 'LENGKAP' : 'BELUM LENGKAP';
+        const warnaStatus = isLengkap ? '#059669' : '#dc2626';
+        const sisa = s.total_pinjam - s.total_kembali;
+        
+        return `
+          <div style="display: flex; flex-direction: column; height: 100%;">
+            <div style="text-align: center; border-bottom: 1.5pt double #000; padding-bottom: 4pt; margin-bottom: 10pt;">
+              <h1 style="font-size: 14pt; margin: 0; text-transform: uppercase; font-weight: bold;">SMP NEGERI 1 TAMAN</h1>
+              <h2 style="font-size: 11pt; margin: 2pt 0 0 0; font-weight: normal;">PERPUSTAKAAN SEKOLAH</h2>
             </div>
-          ` : ''}
-          <div class="print-signature right">
-            <div class="date">Sidoarjo, ${new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</div>
-            <div>Kepala Perpustakaan</div>
-            <br><br>
-            <div class="line">( ............................................ )</div>
+            <h2 style="font-size: 12pt; margin-bottom: 12pt; text-align: center; text-decoration: underline;">SURAT KETERANGAN BEBAS PUSTAKA</h2>
+            <p style="font-size: 10pt; margin-bottom: 10pt; line-height: 1.4;">
+              Yang bertanda tangan di bawah ini, Kepala Perpustakaan SMP Negeri 1 Taman, menerangkan dengan sesungguhnya bahwa:
+            </p>
+            <div style="font-size: 10pt; margin-left: 10pt; margin-bottom: 12pt; line-height: 1.6;">
+              <div style="display: grid; grid-template-columns: 140px 10px 1fr; margin-bottom: 2px;"><div>Nama</div><div>:</div><div><strong>${escapeHtml(s.nama)}</strong></div></div>
+              <div style="display: grid; grid-template-columns: 140px 10px 1fr; margin-bottom: 2px;"><div>NIS</div><div>:</div><div>${escapeHtml(s.nis)}</div></div>
+              <div style="display: grid; grid-template-columns: 140px 10px 1fr; margin-bottom: 2px;"><div>Kelas</div><div>:</div><div>${escapeHtml(s.kelas) || '-'}</div></div>
+              <div style="display: grid; grid-template-columns: 140px 10px 1fr; margin-bottom: 2px;"><div>Total Buku Paket</div><div>:</div><div>${s.total_pinjam} Buku</div></div>
+              ${!isLengkap ? `<div style="display: grid; grid-template-columns: 140px 10px 1fr; margin-bottom: 2px;"><div>Kekurangan</div><div>:</div><div><strong style="color: red;">${sisa} Buku belum dikembalikan</strong></div></div>` : ''}
+            </div>
+            <p style="font-size: 10pt; margin-bottom: 15pt;">Berdasarkan data sistem perpustakaan, siswa tersebut dinyatakan:</p>
+            <div style="text-align: center; margin: 10pt 0 20pt 0;">
+              <h1 style="font-size: 24pt; color: ${warnaStatus}; margin: 0; font-weight: bold; letter-spacing: 1px; border: 3px solid ${warnaStatus}; padding: 8pt 20pt; display: inline-block; transform: rotate(-3deg); font-family: Arial, sans-serif; white-space: nowrap;">${teksStatus}</h1>
+            </div>
+            <p style="font-size: 10pt; margin-bottom: 15pt; text-align: center;">dalam menyelesaikan peminjaman dan pengembalian seluruh buku paket.</p>
+            ${!isLengkap && s.buku_belum_kembali ? `
+              <div style="margin: 0 auto 10pt auto; border: 1px dashed #666; padding: 6pt 10pt; background: #fafafa; text-align: left; width: 85%; font-size: 9pt;">
+                <strong style="display: block; margin-bottom: 3pt; text-align: center;">Lampiran: Buku Paket Belum Kembali</strong>
+                <ul style="margin: 0; padding-left: 15pt; line-height: 1.3;">${s.buku_belum_kembali.split(', ').map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul>
+              </div>
+            ` : ''}
+            <div style="text-align: right; font-size: 10pt; margin-top: auto; padding-right: 15pt;">
+              <div>Sidoarjo, ${new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</div>
+              <div>Kepala Perpustakaan</div>
+              <br><br>
+              <div style="display: inline-block; border-bottom: 1pt solid #000; min-width: 140pt; text-align: center; padding-bottom: 2pt;">( ............................................ )</div>
+            </div>
           </div>
+        `;
+      };
+
+      pagesHTML += `
+        <div class="ijazah-page">
+          <div class="ijazah-half left">${renderIjazah(s1)}</div>
+          <div class="ijazah-half">${renderIjazah(s2)}</div>
         </div>
       `;
-    }).join('');
-    document.getElementById('print-area').innerHTML = pages;
-    window.print();
-  } catch (err) { toast(err.message, 'error'); }
+    }
+    
+    // Tambahkan CSS Ijazah ke dalam htmlContent
+    const ijazahStyles = `
+      <style>
+        .ijazah-page { width: 29.7cm; height: 21cm; display: flex; page-break-after: always; }
+        .ijazah-half { width: 50%; height: 100%; padding: 1cm 1.5cm; display: flex; flex-direction: column; position: relative; font-family: 'Times New Roman', Times, serif; }
+        .ijazah-half.left { border-right: 1.5px dashed #bbb; }
+      </style>
+      ${pagesHTML}
+    `;
+
+    cetakDalamIframe(ijazahStyles, true); // <--- PENTING: TRUE = Landscape
+    
+  } catch (err) {
+    toast(err.message, 'error');
+  }
 }
 
 // ================================================================

@@ -62,7 +62,7 @@ function addDays(dateStr, days) {
 router.get('/', (req, res) => {
   try {
     const page   = Math.max(1, parseInt(req.query.page) || 1);
-    const limit  = Math.min(200, Math.max(1, parseInt(req.query.limit) || 20));
+    const limit  = Math.min(5000, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
     const search = (req.query.search || '').trim();
     const status = (req.query.status || '').trim();

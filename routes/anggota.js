@@ -11,7 +11,7 @@ const db = require('../db');
 router.get('/', (req, res) => {
   try {
     const page   = Math.max(1, parseInt(req.query.page) || 1);
-    const limit  = Math.min(200, Math.max(1, parseInt(req.query.limit) || 20));
+    const limit  = Math.min(5000, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
 
     const search = (req.query.search || '').trim();
@@ -210,7 +210,7 @@ router.delete('/:id', (req, res) => {
 });
 
 // ================================================================
-// POST /api/anggota/import — Import massal dari CSV
+// POST /api/anggota/import — Smart Merge (INSERT / UPDATE / SKIP)
 // ================================================================
 router.post('/import', (req, res) => {
   try {
@@ -222,13 +222,26 @@ router.post('/import', (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Maksimal 20.000 baris per import' });
     }
 
+    const check = db.prepare('SELECT * FROM anggota WHERE nis = ?');
+
     const insert = db.prepare(`
       INSERT INTO anggota (nis, nama, jenis, kelas, jenis_kelamin, no_hp, alamat, tanggal_aktif_sampai)
       VALUES (@nis, @nama, @jenis, @kelas, @jenis_kelamin, @no_hp, @alamat, @tanggal_aktif_sampai)
     `);
-    const check = db.prepare('SELECT id FROM anggota WHERE nis = ?');
 
-    const hasil = { sukses: 0, duplikat: 0, gagal: 0, errors: [] };
+    // Update HANYA field yang berasal dari Excel (jangan sentuh no_hp, alamat, status, dll.)
+    const update = db.prepare(`
+      UPDATE anggota SET
+        nama = @nama,
+        jenis = @jenis,
+        kelas = @kelas,
+        jenis_kelamin = @jenis_kelamin,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE nis = @nis
+    `);
+
+    const hasil = { sukses: 0, diperbarui: 0, duplikat: 0, gagal: 0, errors: [] };
+    const perubahan = []; // log detail untuk audit
 
     const insertMany = db.transaction((data) => {
       data.forEach((r, idx) => {
@@ -240,25 +253,71 @@ router.post('/import', (req, res) => {
           hasil.errors.push(`Baris ${idx + 2}: NIS/nama kosong`);
           return;
         }
-        if (check.get(nis)) {
-          hasil.duplikat++;
-          return;
-        }
-        try {
-          insert.run({
-            nis,
-            nama,
-            jenis: r.jenis || 'siswa',
-            kelas: r.kelas || null,
-            jenis_kelamin: r.jenis_kelamin || null,
-            no_hp: r.no_hp || null,
-            alamat: r.alamat || null,
-            tanggal_aktif_sampai: r.tanggal_aktif_sampai || null
-          });
-          hasil.sukses++;
-        } catch (e) {
-          hasil.gagal++;
-          hasil.errors.push(`Baris ${idx + 2} (${nis}): ${e.message}`);
+
+        const existing = check.get(nis);
+
+        if (existing) {
+          // Cek field per field
+          const beda = [];
+          const namaBaru  = nama;
+          const jenisBaru = r.jenis || 'siswa';
+          const kelasBaru = r.kelas || null;
+          const jkBaru    = r.jenis_kelamin || null;
+
+          if ((existing.nama || '') !== namaBaru) beda.push('nama');
+          if ((existing.jenis || 'siswa') !== jenisBaru) beda.push('jenis');
+          if ((existing.kelas || '') !== (kelasBaru || '')) beda.push('kelas');
+          if ((existing.jenis_kelamin || '') !== (jkBaru || '')) beda.push('jenis_kelamin');
+
+          if (beda.length === 0) {
+            // Duplikat sejati — semua field sama
+            hasil.duplikat++;
+            return;
+          }
+
+          // Ada field yang berbeda → UPDATE
+          try {
+            update.run({
+              nis,
+              nama: namaBaru,
+              jenis: jenisBaru,
+              kelas: kelasBaru,
+              jenis_kelamin: jkBaru
+            });
+            hasil.diperbarui++;
+            perubahan.push({
+              nis,
+              nama: namaBaru,
+              field: beda,
+              lama: {
+                nama: existing.nama,
+                jenis: existing.jenis,
+                kelas: existing.kelas,
+                jenis_kelamin: existing.jenis_kelamin
+              }
+            });
+          } catch (e) {
+            hasil.gagal++;
+            hasil.errors.push(`Baris ${idx + 2} (${nis}): ${e.message}`);
+          }
+        } else {
+          // NIS belum ada → INSERT baru
+          try {
+            insert.run({
+              nis,
+              nama,
+              jenis: r.jenis || 'siswa',
+              kelas: r.kelas || null,
+              jenis_kelamin: r.jenis_kelamin || null,
+              no_hp: r.no_hp || null,
+              alamat: r.alamat || null,
+              tanggal_aktif_sampai: r.tanggal_aktif_sampai || null
+            });
+            hasil.sukses++;
+          } catch (e) {
+            hasil.gagal++;
+            hasil.errors.push(`Baris ${idx + 2} (${nis}): ${e.message}`);
+          }
         }
       });
     });
@@ -267,8 +326,9 @@ router.post('/import', (req, res) => {
 
     res.json({
       status: 'ok',
-      message: `Import selesai: ${hasil.sukses} sukses, ${hasil.duplikat} duplikat, ${hasil.gagal} gagal`,
-      hasil
+      message: `Import: ${hasil.sukses} baru, ${hasil.diperbarui || 0} diperbarui, ${hasil.duplikat} sama, ${hasil.gagal} gagal`,
+      hasil,
+      perubahan_sample: perubahan.slice(0, 10) // kirim 10 contoh perubahan untuk ditampilkan
     });
   } catch (err) {
     console.error('[POST /anggota/import error]', err.message, err.stack);

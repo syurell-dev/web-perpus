@@ -79,9 +79,8 @@ router.post('/proses', (req, res) => {
         } else {
           items.push({ action: 'kembali', detail_id: detail.detail_id, peminjaman_id: detail.peminjaman_id, buku_id: item.buku_id, jumlah: item.jumlah, is_late: today > detail.tanggal_jatuh });
         }
-      } else {
-        const otherBorrow = db.prepare(`SELECT id FROM peminjaman_detail WHERE buku_id = ? AND status = 'dipinjam'`).get(item.buku_id);
-        if (otherBorrow) return res.status(400).json({ status: 'error', message: `Buku sedang dipinjam oleh orang lain.` });
+            } else {
+        // PINJAM BUKU BARU
         items.push({ action: 'pinjam', buku_id: item.buku_id, jumlah: item.jumlah });
       }
     }
