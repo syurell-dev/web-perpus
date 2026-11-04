@@ -14,13 +14,6 @@ function getSetting(key, def = null) {
   return row ? row.value : def;
 }
 
-function hitungDenda(tglJatuh, tglKembali, dendaPerHari) {
-  const jatuh   = new Date(tglJatuh   + 'T00:00:00');
-  const kembali = new Date(tglKembali + 'T00:00:00');
-  const diffHari = Math.floor((kembali - jatuh) / (1000 * 60 * 60 * 24));
-  return diffHari > 0 ? diffHari * dendaPerHari : 0;
-}
-
 function generateKodePinjam(tglPinjam) {
   const d = new Date(tglPinjam + 'T00:00:00');
   const ymd = d.getFullYear().toString() +
@@ -150,7 +143,6 @@ router.get('/:id', (req, res) => {
     const today = todayStr();
     p.is_terlambat = (p.status === 'dipinjam' || p.status === 'sebagian') && p.tanggal_jatuh < today;
 
-    const dendaPerHari = parseInt(getSetting('denda_per_hari', '500'), 10);
     if (p.is_terlambat) {
       p.estimasi_denda = hitungDenda(p.tanggal_jatuh, today, dendaPerHari);
       p.hari_terlambat = Math.floor(
@@ -313,7 +305,7 @@ router.post('/:id/kembalikan', (req, res) => {
       let isTerlambat = false; // ◄ TAMBAHKAN INI
 
       for (const d of details) {
-        const denda = hitungDenda(peminjaman.tanggal_jatuh, tglKembali, dendaPerHari);
+        const denda = 0;
         updateDetail.run(tglKembali, denda, d.id);
         updateStok.run(d.jumlah, d.buku_id);
         totalDendaBaru += denda;

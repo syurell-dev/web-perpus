@@ -201,44 +201,105 @@ const upload = multer({ dest: os.tmpdir() });
 router.post('/restore', upload.single('database_file'), (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ status: 'error', message: 'File database tidak ditemukan' });
+      return res.status(400).json({ status: 'error', message: 'File tidak ditemukan' });
     }
 
-    if (!req.file.originalname.endsWith('.db')) {
-      return res.status(400).json({ status: 'error', message: 'File harus berformat .db' });
-    }
-
-    console.log('⏳ Memulai proses restore database...');
-
-    // 1. Tutup koneksi database saat ini agar file tidak terkunci
-    db.close();
-
-    // 2. Timpa file database lama dengan yang baru
     const fs = require('fs');
-    fs.copyFileSync(req.file.path, DB_PATH);
+    
+    console.log('\n══════════════════════════════════════════');
+    console.log('📥 RESTORE DATABASE DIMULAI');
+    console.log('══════════════════════════════════════════');
+    console.log('File uploaded:', req.file.originalname);
+    console.log('Ukuran upload:', req.file.size, 'bytes');
+    console.log('Path temp:', req.file.path);
 
-    // 3. Hapus file temporary
-    fs.unlinkSync(req.file.path);
+    // Validasi header SQLite
+    if (req.file.size < 10000) {
+      throw new Error(`File terlalu kecil (${req.file.size} bytes). Minimal 10KB.`);
+    }
 
-    console.log('✅ Restore database berhasil. Memicu restart server...');
+    const fd = fs.openSync(req.file.path, 'r');
+    const headerBuf = Buffer.alloc(16);
+    fs.readSync(fd, headerBuf, 0, 16, 0);
+    fs.closeSync(fd);
+    const header = headerBuf.toString('utf8', 0, 15);
+    
+    if (header !== 'SQLite format 3') {
+      throw new Error(`Bukan file SQLite valid. Header: "${header}"`);
+    }
+    console.log('✅ Header SQLite valid');
 
-    // 4. Kirim response ke browser
-    res.json({ 
-      status: 'ok', 
-      message: 'Database berhasil direstore! Halaman akan dimuat ulang...' 
-    });
+    const dbSizeBefore = fs.existsSync(DB_PATH) ? fs.statSync(DB_PATH).size : 0;
+    console.log('Ukuran DB sebelum:', dbSizeBefore, 'bytes');
 
-    // 5. Trik "Sentuh File" agar Nodemon otomatis restart
+    // Tutup koneksi
+    db.close();
+    console.log('🔒 DB ditutup');
+
+    // Delay agar file lepas dari lock Windows
     setTimeout(() => {
-      const path = require('path');
-      const now = new Date();
-      // Ubah timestamp server.js agar nodemon mendeteksi ada perubahan
-      fs.utimesSync(path.join(__dirname, '..', 'server.js'), now, now);
-    }, 1000);
+      try {
+        // Hapus WAL & SHM
+        [DB_PATH + '-wal', DB_PATH + '-shm'].forEach(f => {
+          if (fs.existsSync(f)) {
+            fs.unlinkSync(f);
+            console.log('🗑️ Dihapus:', path.basename(f));
+          }
+        });
+
+        // Simpan file lama sebagai safety
+        if (fs.existsSync(DB_PATH)) {
+          fs.copyFileSync(DB_PATH, DB_PATH + '.old-' + Date.now());
+          console.log('💾 File lama disimpan');
+        }
+
+        // COPY FILE BARU
+        fs.copyFileSync(req.file.path, DB_PATH);
+        const dbSizeAfter = fs.statSync(DB_PATH).size;
+        console.log('📁 DB baru:', dbSizeAfter, 'bytes');
+
+        if (dbSizeAfter !== req.file.size) {
+          throw new Error(`Copy gagal! Upload: ${req.file.size}, DB: ${dbSizeAfter}`);
+        }
+        console.log('✅ Ukuran cocok');
+
+        // Verifikasi isi
+        try {
+          const Database = require('better-sqlite3');
+          const vdb = new Database(DB_PATH, { readonly: true });
+          const n = vdb.prepare('SELECT COUNT(*) as n FROM anggota').get().n;
+          vdb.close();
+          console.log(`✅ Verifikasi: ${n} anggota di DB baru`);
+        } catch (vErr) {
+          console.log('⚠️ Verifikasi gagal:', vErr.message);
+        }
+
+        fs.unlinkSync(req.file.path);
+
+        res.json({ 
+          status: 'ok', 
+          message: `Restore OK! ${dbSizeBefore} → ${dbSizeAfter} bytes. Server restart 2 detik...` 
+        });
+
+        // Force exit + touch
+        setTimeout(() => {
+          try {
+            const now = new Date();
+            fs.utimesSync(path.join(__dirname, '..', 'server.js'), now, now);
+          } catch (e) {}
+          process.exit(0);
+        }, 2000);
+
+      } catch (copyErr) {
+        console.error('❌ COPY GAGAL:', copyErr.message);
+        res.status(500).json({ status: 'error', message: copyErr.message });
+        setTimeout(() => process.exit(1), 1000);
+      }
+    }, 500);
 
   } catch (err) {
-    console.error('❌ Gagal restore database:', err);
-    res.status(500).json({ status: 'error', message: 'Gagal me-restore database: ' + err.message });
+    console.error('❌ RESTORE GAGAL:', err.message);
+    res.status(500).json({ status: 'error', message: err.message });
   }
 });
 

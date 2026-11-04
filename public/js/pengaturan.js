@@ -1,5 +1,5 @@
 // ================================================================
-// pengaturan.js — Logika halaman Pengaturan
+// pengaturan.js — Logika halaman Pengaturan (Final Clean)
 // ================================================================
 
 const state = {
@@ -16,7 +16,7 @@ function formatTanggalWaktu(str) {
 }
 
 // ================================================================
-// LOAD PENGATURAN
+// LOAD
 // ================================================================
 async function loadPengaturan() {
   try {
@@ -24,21 +24,16 @@ async function loadPengaturan() {
     state.settings = {};
     res.data.forEach(p => { state.settings[p.key] = p.value; });
 
-    // Isi form pengaturan umum
     document.getElementById('f-nama_perpustakaan').value  = state.settings.nama_perpustakaan || '';
-    document.getElementById('f-denda_per_hari').value     = state.settings.denda_per_hari || 500;
     document.getElementById('f-lama_pinjam_default').value = state.settings.lama_pinjam_default || 7;
     document.getElementById('f-max_buku_per_pinjam').value = state.settings.max_buku_per_pinjam || 3;
     
-    // Isi form masa aktif domain
     const domainInput = document.getElementById('f-domain_expired_at');
     if (domainInput) domainInput.value = state.settings.domain_expired_at || '';
 
-    // Info aplikasi — versi otomatis dari package.json
     const versionEl = document.querySelector('[data-app-version]');
     if (versionEl && res.app) versionEl.textContent = 'v' + res.app.version;
 
-    // Isi info database
     const info = res.info;
     document.getElementById('info-size').textContent = info.db_size_human;
     document.getElementById('info-mtime').textContent = formatTanggalWaktu(info.db_mtime);
@@ -52,14 +47,13 @@ async function loadPengaturan() {
 }
 
 // ================================================================
-// SIMPAN PENGATURAN
+// SIMPAN
 // ================================================================
 async function simpanPengaturan(e) {
   e.preventDefault();
 
   const payload = {
     nama_perpustakaan:   document.getElementById('f-nama_perpustakaan').value.trim(),
-    denda_per_hari:      document.getElementById('f-denda_per_hari').value,
     lama_pinjam_default: document.getElementById('f-lama_pinjam_default').value,
     max_buku_per_pinjam: document.getElementById('f-max_buku_per_pinjam').value,
     domain_expired_at:   document.getElementById('f-domain_expired_at') ? document.getElementById('f-domain_expired_at').value : ''
@@ -68,7 +62,7 @@ async function simpanPengaturan(e) {
   const btn = document.getElementById('btn-simpan');
   btn.disabled = true;
   btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Menyimpan...';
-  if (typeof lucide !== 'undefined') lucide.createIcons();
+  if (window.lucide) lucide.createIcons();
 
   try {
     const res = await apiPut('/pengaturan', payload);
@@ -79,7 +73,7 @@ async function simpanPengaturan(e) {
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Simpan Pengaturan';
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 }
 
@@ -93,7 +87,7 @@ async function perpanjangDomain() {
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Memproses...';
-  if (typeof lucide !== 'undefined') lucide.createIcons();
+  if (window.lucide) lucide.createIcons();
 
   try {
     const res = await fetch('/api/pengingat/domain/perpanjang', {
@@ -103,23 +97,20 @@ async function perpanjangDomain() {
     });
     const json = await res.json();
 
-    if (!res.ok || json.status !== 'ok') {
-      throw new Error(json.message || 'Gagal memperpanjang domain');
-    }
-
+    if (!res.ok || json.status !== 'ok') throw new Error(json.message || 'Gagal memperpanjang');
     toast(json.message, 'success');
-    await loadPengaturan(); 
+    await loadPengaturan();
   } catch (err) {
     toast(err.message, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalHtml;
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 }
 
 // ================================================================
-// BACKUP & RESTORE
+// BACKUP
 // ================================================================
 function downloadBackup() {
   toast('Menyiapkan backup...', 'info');
@@ -127,7 +118,7 @@ function downloadBackup() {
 }
 
 // ================================================================
-// RESET DATA
+// RESET
 // ================================================================
 function bukaModalReset(type) {
   state.resetType = type;
@@ -170,24 +161,19 @@ async function lakukanReset() {
 }
 
 // ================================================================
-// KARTU ANGGOTA QR (DROPDOWN & CETAK)
+// KARTU ANGGOTA
 // ================================================================
 async function loadAnggotaDropdown() {
   try {
-    // Naikkan limit agar semua anggota terambil untuk cetak massal
     const res = await apiGet('/anggota', { limit: 2000, status: 'aktif' });
     state.anggotaList = res.data;
 
-    // 1. Isi dropdown Pilih Anggota (Perorangan)
     const sel = document.getElementById('pilih-anggota');
     if (sel) {
       sel.innerHTML = '<option value="">-- Pilih Anggota --</option>' +
-        res.data.map(a =>
-          `<option value="${a.id}">${escapeHtml(a.nama)} — ${escapeHtml(a.nis)}${a.kelas ? ' (' + escapeHtml(a.kelas) + ')' : ''}</option>`
-        ).join('');
+        res.data.map(a => `<option value="${a.id}">${escapeHtml(a.nama)} — ${escapeHtml(a.nis)}${a.kelas ? ' (' + escapeHtml(a.kelas) + ')' : ''}</option>`).join('');
     }
 
-    // 2. Isi dropdown Pilih Kelas (Massal)
     const selKelas = document.getElementById('pilih-kelas');
     if (selKelas) {
       const kelasList = [...new Set(res.data.map(a => a.kelas).filter(Boolean))].sort();
@@ -199,13 +185,11 @@ async function loadAnggotaDropdown() {
   }
 }
 
-// Konversi NIS → EAN-13 (13 digit valid)
 function nisToEAN13(nis) {
   const digits = String(nis).replace(/\D/g, '');
   const prefix = '200'; 
   const body = digits.padStart(9, '0').slice(-9);
   const base12 = prefix + body;
-
   let sum = 0;
   for (let i = 0; i < 12; i++) {
     sum += parseInt(base12[i], 10) * (i % 2 === 0 ? 1 : 3);
@@ -215,7 +199,6 @@ function nisToEAN13(nis) {
 }
 
 async function generateKartuHTML(anggota) {
-  const namaPerpus = state.settings.nama_perpustakaan || 'Perpustakaan Sekolah';
   const barcodeVal = nisToEAN13(anggota.nis);
   const uid = 'bc-' + anggota.id + '-' + Math.random().toString(36).slice(2, 6);
 
@@ -224,8 +207,8 @@ async function generateKartuHTML(anggota) {
       <div class="print-card-header">
         <img src="/img/logo.png" alt="Logo">
         <div class="print-card-title">
-          ${escapeHtml(namaPerpus)}
-          <div class="sub">Kartu Anggota Perpustakaan</div>
+          Kartu Anggota Perpustakaan
+          <div class="sub">SMP Negeri 1 Taman</div>
         </div>
       </div>
       <div class="print-card-info-block">
@@ -248,25 +231,14 @@ async function generateKartuHTML(anggota) {
 }
 
 function renderAllBarcodes() {
-  if (typeof JsBarcode === 'undefined') {
-    console.warn('JsBarcode belum ke-load');
-    return;
-  }
+  if (typeof JsBarcode === 'undefined') return;
   document.querySelectorAll('.barcode-svg').forEach(svg => {
     const val = svg.dataset.value;
     if (!val) return;
     try {
-      JsBarcode(svg, val, {
-        format: 'EAN13', width: 1.4, height: 38, displayValue: true,
-        fontSize: 9, margin: 0, font: 'Courier New', textMargin: 1
-      });
+      JsBarcode(svg, val, { format: 'EAN13', width: 1.4, height: 38, displayValue: true, fontSize: 9, margin: 0, font: 'Courier New', textMargin: 1 });
     } catch (e) {
-      try {
-        JsBarcode(svg, val, {
-          format: 'CODE128', width: 1.4, height: 38, displayValue: true,
-          fontSize: 9, margin: 0, font: 'Courier New'
-        });
-      } catch (e2) { console.error('Barcode gagal:', e2); }
+      try { JsBarcode(svg, val, { format: 'CODE128', width: 1.4, height: 38, displayValue: true, fontSize: 9, margin: 0, font: 'Courier New' }); } catch (e2) {}
     }
   });
 }
@@ -274,83 +246,50 @@ function renderAllBarcodes() {
 async function cetakKartu() {
   const id = document.getElementById('pilih-anggota').value;
   if (!id) return toast('Pilih anggota dulu', 'warning');
-
   const anggota = state.anggotaList.find(a => a.id == id);
   if (!anggota) return toast('Anggota tidak ditemukan', 'error');
 
   const html = await generateKartuHTML(anggota);
-
-  document.getElementById('print-area').innerHTML = `
-    <div class="print-page">
-      <div class="print-cards-container">${html}</div>
-    </div>
-  `;
-  setTimeout(() => { 
-    renderAllBarcodes(); 
-    setTimeout(() => window.print(), 300);
-  }, 100);
+  document.getElementById('print-area').innerHTML = `<div class="print-page"><div class="print-cards-container">${html}</div></div>`;
+  setTimeout(() => { renderAllBarcodes(); setTimeout(() => window.print(), 300); }, 100);
 }
 
 async function cetakSemuaKartu() {
   if (!state.anggotaList.length) return toast('Belum ada anggota', 'warning');
-
   const selectedKelas = document.getElementById('pilih-kelas').value;
-  if (!selectedKelas) {
-    return toast('Silakan pilih kelas terlebih dahulu', 'warning');
-  }
-
-  // Filter berdasarkan kelas yang dipilih
+  if (!selectedKelas) return toast('Silakan pilih kelas terlebih dahulu', 'warning');
+  
   const list = state.anggotaList.filter(a => a.kelas === selectedKelas);
-
-  if (list.length === 0) {
-    return toast(`Tidak ada siswa aktif di kelas ${selectedKelas}`, 'warning');
-  }
-
-  if (list.length > 60) {
-    return toast(`Kelas ${selectedKelas} memiliki ${list.length} siswa. Cetak maksimal 60 kartu sekali waktu.`, 'warning');
-  }
+  if (list.length === 0) return toast(`Tidak ada siswa di kelas ${selectedKelas}`, 'warning');
+  if (list.length > 60) return toast(`Maksimal 60 kartu sekali cetak.`, 'warning');
 
   const cards = await Promise.all(list.map(a => generateKartuHTML(a)));
-
   document.getElementById('print-area').innerHTML = `
     <div class="print-page">
-      <div class="print-header">
-        <h1>Kartu Anggota Perpustakaan</h1>
-        <p class="meta">Kelas ${escapeHtml(selectedKelas)} — ${list.length} kartu — ${new Date().toLocaleDateString('id-ID')}</p>
-      </div>
+      <div class="print-header"><h1>Kartu Anggota Perpustakaan</h1><p class="meta">Kelas ${escapeHtml(selectedKelas)} — ${list.length} kartu</p></div>
       <div class="print-cards-container">${cards.join('')}</div>
-    </div>
-  `;
-  setTimeout(() => { 
-    renderAllBarcodes(); 
-    setTimeout(() => window.print(), 300);
-  }, 100);
+    </div>`;
+  setTimeout(() => { renderAllBarcodes(); setTimeout(() => window.print(), 300); }, 100);
 }
 
 // ================================================================
-// INIT
+// INIT & RESTORE
 // ================================================================
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) lucide.createIcons();
-
   await loadPengaturan();
   await loadAnggotaDropdown();
 
-  // Form pengaturan
   document.getElementById('form-pengaturan').addEventListener('submit', simpanPengaturan);
-
-  // Tombol Perpanjang Domain
+  
   const btnPerpanjang = document.getElementById('btn-perpanjang-domain');
   if (btnPerpanjang) btnPerpanjang.addEventListener('click', perpanjangDomain);
 
-  // Backup
   document.getElementById('btn-backup').addEventListener('click', downloadBackup);
 
-  // Reset
   document.getElementById('btn-reset-peminjaman').addEventListener('click', () => bukaModalReset('peminjaman'));
   document.getElementById('btn-reset-semua').addEventListener('click', () => bukaModalReset('semua'));
 
-  // Modal reset
   const inputKonfirmasi = document.getElementById('input-konfirmasi');
   if (inputKonfirmasi) {
     inputKonfirmasi.addEventListener('input', (e) => {
@@ -358,23 +297,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  document.getElementById('btn-cancel-reset')?.addEventListener('click', () => {
-    document.getElementById('modal-reset').classList.add('hidden');
-  });
+  document.getElementById('btn-cancel-reset')?.addEventListener('click', () => document.getElementById('modal-reset').classList.add('hidden'));
   document.getElementById('btn-konfirmasi-reset')?.addEventListener('click', lakukanReset);
-  document.getElementById('modal-reset')?.addEventListener('click', (e) => {
-    if (e.target.id === 'modal-reset') e.currentTarget.classList.add('hidden');
-  });
+  document.getElementById('modal-reset')?.addEventListener('click', (e) => { if (e.target.id === 'modal-reset') e.currentTarget.classList.add('hidden'); });
 
-  // Kartu
   document.getElementById('pilih-anggota')?.addEventListener('change', (e) => {
     document.getElementById('btn-cetak-kartu').disabled = !e.target.value;
   });
   document.getElementById('btn-cetak-kartu')?.addEventListener('click', cetakKartu);
   document.getElementById('btn-cetak-semua')?.addEventListener('click', cetakSemuaKartu);
 
-  // Esc
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') document.getElementById('modal-reset')?.classList.add('hidden');
-  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.getElementById('modal-reset')?.classList.add('hidden'); });
+
+  // --- LOGIKA RESTORE DATABASE (YANG TADI HILANG) ---
+  const formRestore = document.getElementById('form-restore');
+  if (formRestore) {
+    formRestore.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      console.log("🚀 [1] Tombol Restore diklik, form terpicu.");
+      
+      const fileInput = document.getElementById('file-restore');
+      const file = fileInput.files[0];
+      console.log("📁 [2] File yang dipilih:", file ? file.name : "TIDAK ADA FILE");
+
+      if (!file) return toast('Pilih file database (.db) terlebih dahulu!', 'warning');
+
+      const konfirmasi = confirm("⚠️ PERINGATAN KERAS ⚠️\n\nAnda akan menimpa SELURUH DATA saat ini dengan file backup.\n\nLanjutkan?");
+      if (!konfirmasi) return;
+
+      const btn = document.getElementById('btn-restore');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Memproses...`;
+
+      const formData = new FormData();
+      formData.append('database_file', file);
+
+      try {
+        console.log("📡 [4] Mengirim request ke /api/pengaturan/restore...");
+        const res = await fetch('/api/pengaturan/restore', { method: 'POST', body: formData });
+        const data = await res.json();
+        console.log("📥 [5] Response:", data);
+
+        if (!res.ok) throw new Error(data.message || 'Gagal restore');
+
+        alert("✅ " + data.message + "\n\nHalaman akan dimuat ulang.");
+        window.location.href = '/login.html';
+        
+      } catch (err) {
+        console.error("❌ Error:", err);
+        alert("❌ ERROR: " + err.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+  }
 });

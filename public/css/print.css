@@ -184,6 +184,7 @@
     font-weight: bold;
     color: #1a7a3e;
     line-height: 1.1;
+    text-align: left; /* <--- TAMBAHKAN INI */
   }
   .print-card-title .sub {
     font-size: 5.5pt;

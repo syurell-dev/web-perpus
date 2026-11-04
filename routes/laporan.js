@@ -38,10 +38,6 @@ router.get('/dashboard', (req, res) => {
       WHERE status IN ('dipinjam','sebagian') AND tanggal_jatuh < ?
     `).get(today).n;
 
-    const totalDenda = db.prepare(`
-      SELECT COALESCE(SUM(denda),0) as total FROM peminjaman_detail
-    `).get().total;
-
     // Buku populer (top 5)
     const populer = db.prepare(`
       SELECT b.id, b.kode_buku, b.judul, b.penulis,
@@ -91,7 +87,6 @@ router.get('/dashboard', (req, res) => {
       status: 'ok',
       data: {
         buku, anggota, pinjam, terlambat,
-        total_denda: totalDenda,
         populer, terbaru, chart_7hari: chart7, stok_menipis: stokMenipis
       }
     });
@@ -130,7 +125,7 @@ router.get('/peminjaman', (req, res) => {
     const rows = db.prepare(`
       SELECT
         p.id, p.kode_pinjam, p.tanggal_pinjam, p.tanggal_jatuh, p.tanggal_kembali,
-        p.status, p.denda,
+        p.status,
         a.nis AS anggota_nis, a.nama AS anggota_nama, a.kelas AS anggota_kelas, a.jenis AS anggota_jenis,
         (SELECT COUNT(*) FROM peminjaman_detail WHERE peminjaman_id = p.id) as jumlah_buku,
         (SELECT GROUP_CONCAT(b.judul, ', ') FROM peminjaman_detail pd
@@ -144,7 +139,6 @@ router.get('/peminjaman', (req, res) => {
     const rekap = {
       total_transaksi: rows.length,
       total_buku: rows.reduce((s, r) => s + (r.jumlah_buku || 0), 0),
-      total_denda: rows.reduce((s, r) => s + (r.denda || 0), 0),
       dipinjam: rows.filter(r => r.status === 'dipinjam' || r.status === 'sebagian').length,
       dikembalikan: rows.filter(r => r.status === 'dikembalikan').length,
       terlambat: rows.filter(r => {
@@ -168,7 +162,7 @@ router.get('/export-peminjaman', (req, res) => {
     const rows = db.prepare(`
       SELECT
         p.kode_pinjam, p.tanggal_pinjam, p.tanggal_jatuh, p.tanggal_kembali,
-        p.status, p.denda, a.nis AS anggota_nis, a.nama AS anggota_nama, a.kelas AS anggota_kelas,
+        p.status, a.nis AS anggota_nis, a.nama AS anggota_nama, a.kelas AS anggota_kelas,
         (SELECT COUNT(*) FROM peminjaman_detail WHERE peminjaman_id = p.id) as jumlah_buku,
         (SELECT GROUP_CONCAT(b.judul, ' | ') FROM peminjaman_detail pd
            JOIN buku b ON b.id = pd.buku_id WHERE pd.peminjaman_id = p.id) as judul_buku
@@ -178,14 +172,14 @@ router.get('/export-peminjaman', (req, res) => {
       ORDER BY p.tanggal_pinjam DESC, p.id DESC
     `).all(dari, sampai);
 
-    const header = 'kode_pinjam,tanggal_pinjam,tanggal_jatuh,tanggal_kembali,status,nis,nama,kelas,jumlah_buku,judul_buku,denda';
+    const header = 'kode_pinjam,tanggal_pinjam,tanggal_jatuh,tanggal_kembali,status,nis,nama,kelas,jumlah_buku,judul_buku';
     const lines = [header];
 
     rows.forEach(r => {
       lines.push([
         r.kode_pinjam, r.tanggal_pinjam, r.tanggal_jatuh, r.tanggal_kembali || '',
         r.status, r.anggota_nis, r.anggota_nama, r.anggota_kelas || '',
-        r.jumlah_buku, r.judul_buku || '', r.denda
+        r.jumlah_buku, r.judul_buku || '', 
       ].map(escapeCSV).join(','));
     });
 

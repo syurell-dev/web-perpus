@@ -135,8 +135,6 @@ function renderTabelPeminjaman(list) {
           <div class="text-slate-400 truncate" title="${escapeHtml(p.judul_buku || '')}">${escapeHtml(p.judul_buku || '-')}</div>
         </td>
         <td class="px-4 py-3 text-center">${statusBadge}</td>
-        <td class="px-4 py-3 text-right font-medium ${p.denda > 0 ? 'text-red-600' : 'text-slate-400'}">
-          ${p.denda > 0 ? formatRupiah(p.denda) : '-'}
         </td>
       </tr>
     `;
@@ -147,7 +145,6 @@ function renderRekapPeminjaman(r) {
   document.getElementById('rekap-transaksi').textContent = r.total_transaksi || 0;
   document.getElementById('rekap-buku').textContent = r.total_buku || 0;
   document.getElementById('rekap-terlambat').textContent = r.terlambat || 0;
-  document.getElementById('rekap-denda').textContent = formatRupiah(r.total_denda || 0);
 }
 
 // ================================================================
@@ -337,7 +334,6 @@ async function printLaporan() {
         <td class="text-center">${formatTanggal(p.tanggal_jatuh)}</td>
         <td class="text-center">${p.jumlah_buku}</td>
         <td class="text-center">${p.status}</td>
-        <td class="text-right">${p.denda > 0 ? formatRupiah(p.denda) : '-'}</td>
       </tr>
     `).join('');
 
@@ -354,16 +350,14 @@ async function printLaporan() {
               <th style="width: 12%; text-align: center;">Jatuh Tempo</th>
               <th style="width: 8%; text-align: center;">Buku</th>
               <th style="width: 14%; text-align: center;">Status</th>
-              <th style="width: 12%; text-align: right;">Denda</th>
             </tr>
           </thead>
-          <tbody>${rowsHTML || '<tr><td colspan="8" class="text-center">Tidak ada data</td></tr>'}</tbody>
+          <tbody>${rowsHTML || '<tr><td colspan="7" class="text-center">Tidak ada data</td></tr>'}</tbody>
         </table>
         <div class="print-summary">
           <div class="row"><span>Total Transaksi:</span> <strong>${res.rekap.total_transaksi}</strong></div>
           <div class="row"><span>Total Buku Dipinjam:</span> <strong>${res.rekap.total_buku}</strong></div>
           <div class="row"><span>Total Terlambat:</span> <strong>${res.rekap.terlambat}</strong></div>
-          <div class="row total"><span>Total Denda:</span> <strong>${formatRupiah(res.rekap.total_denda)}</strong></div>
         </div>
         <div class="print-signature right">
           <div class="date">Sidoarjo, ${new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</div>
