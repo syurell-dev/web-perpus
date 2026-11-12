@@ -110,7 +110,23 @@ function requireAuth(req, res, next) {
 
     // Redirect jika Siswa/Guru mencoba akses Dashboard/Admin UI (selain portal)
   // PENTING: Gunakan req.originalUrl dan pastikan BUKAN panggilan API
+  // BLOKIR ROLE KIOSK: Hanya boleh akses kiosk.html dan API kiosk
+  if (session.role === 'kiosk') {
+    const allowedPaths = ['/kiosk.html', '/api/kiosk', '/api/auth/logout', '/api/auth/me'];
+    const isAllowed = allowedPaths.some(p => req.originalUrl.startsWith(p));
+    if (!isAllowed) {
+      if (req.originalUrl.startsWith('/api/')) {
+        return res.status(403).json({ status: 'error', message: 'Akses ditolak. Ini akun Kiosk.' });
+      }
+      return res.redirect('/kiosk.html');
+    }
+    req.user = session;
+    return next();
+  }
+
+  // Redirect jika Siswa/Guru mencoba akses Dashboard/Admin UI (selain portal)
   if (session.role !== 'admin' && req.method === 'GET' && !req.originalUrl.startsWith('/api/')) {
+    
     const adminPages = ['/', '/index.html', '/dashboard.html', '/buku.html', '/anggota.html', 
                         '/peminjaman.html', '/laporan.html', '/pengaturan.html', '/scan.html', '/buku-digital.html'];
     

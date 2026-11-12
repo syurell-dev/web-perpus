@@ -556,7 +556,37 @@ function switchTab(tab) {
     if (viewPaket) viewPaket.classList.remove('hidden');
     document.getElementById('wrap-filter-status').style.display = 'none';
     loadLaporanPaket();
+  } else if (tab === 'peringkat') {
+    const btnPeringkat = document.getElementById('tab-peringkat');
+    const viewPeringkat = document.getElementById('view-peringkat');
+    if (btnPeringkat) btnPeringkat.className = `${baseClass} text-blue-600 border-blue-600`;
+    if (viewPeringkat) viewPeringkat.classList.remove('hidden');
+    document.getElementById('wrap-filter-status').style.display = 'none';
+    loadLeaderboard(); // Panggil fungsi load leaderboard
   }
+}
+
+async function loadLeaderboard() {
+  const container = document.getElementById('list-leaderboard');
+  container.innerHTML = `<div class="py-10 text-center text-slate-400">Memuat data...</div>`;
+  try {
+    const res = await apiGet('/laporan/leaderboard');
+    container.innerHTML = res.data.map((u, i) => {
+      let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span class="text-xs font-bold text-slate-400">#${i+1}</span>`;
+      return `
+        <div class="p-4 flex items-center gap-4 hover:bg-slate-50 transition">
+          <div class="w-8 h-8 flex items-center justify-center text-lg">${medal}</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-slate-800 text-sm truncate">${escapeHtml(u.nama)}</div>
+            <div class="text-xs text-slate-500">${escapeHtml(u.kelas || '-')} · ${escapeHtml(u.nis)}</div>
+          </div>
+          <div class="font-extrabold text-emerald-600 text-sm bg-emerald-50 px-3 py-1 rounded-lg">
+            ${u.total_buku} <span class="text-[10px] font-normal text-emerald-500">Buku</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) { container.innerHTML = `<div class="p-4 text-red-500">${err.message}</div>`; }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -575,12 +605,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabB = document.getElementById('tab-buku');
   const tabK = document.getElementById('tab-kunjungan');
   const tabPaket = document.getElementById('tab-paket');
-
   if (tabP) tabP.addEventListener('click', () => switchTab('peminjaman'));
   if (tabB) tabB.addEventListener('click', () => switchTab('buku'));
   if (tabK) tabK.addEventListener('click', () => switchTab('kunjungan'));
   if (tabPaket) tabPaket.addEventListener('click', () => switchTab('paket'));
-
+ const tabPeringkat = document.getElementById('tab-peringkat');
+  if (tabPeringkat) tabPeringkat.addEventListener('click', () => switchTab('peringkat'));
   const btnTerapkan = document.getElementById('btn-terapkan');
   if (btnTerapkan) {
     btnTerapkan.addEventListener('click', () => {

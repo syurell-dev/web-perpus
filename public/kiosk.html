@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiosk Perpustakaan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/vendor/lucide.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+      color: white;
+      overflow: hidden;
+      height: 100vh;
+      margin: 0;
+    }
+
+    /* Animasi Scan Glow */
+    .scan-glow {
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 0.3; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    .modal-overlay { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center relative">
+
+  <!-- SCAN SCREEN -->
+  <div id="screen-scan" class="w-full h-full flex flex-col items-center justify-center">
+    
+    <!-- Ikon Scanner Glowing -->
+    <div class="relative flex items-center justify-center mb-10">
+      <div class="absolute w-40 h-40 bg-emerald-500 rounded-full opacity-20 scan-glow"></div>
+      <div class="w-32 h-32 bg-slate-800 rounded-full border-4 border-emerald-500 flex items-center justify-center z-10 shadow-[0_0_30px_rgba(16,185,129,0.5)]">
+        <i data-lucide="scan-line" class="w-16 h-16 text-emerald-400"></i>
+      </div>
+    </div>
+
+    <h1 class="text-5xl md:text-6xl font-black mb-4 tracking-tight text-center">Selamat Datang!</h1>
+    <p class="text-xl md:text-2xl text-slate-300 mb-12 text-center max-w-2xl leading-relaxed">
+      Silakan arahkan <b class="text-emerald-400">Barcode Kartu Anggota</b> Anda ke Scanner.
+    </p>
+
+    <!-- Indikator Kecil (Hanya hiasan) -->
+    <div class="flex items-center gap-2 text-slate-500 font-mono text-sm animate-pulse">
+      <i data-lucide="wifi" class="w-4 h-4"></i> Menunggu Scan...
+    </div>
+  </div>
+
+  <!-- MENU SCREEN -->
+  <div id="screen-menu" class="hidden w-full h-full max-w-5xl p-8 flex-col">
+    <!-- Header Siswa -->
+    <div class="flex justify-between items-center bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 shadow-2xl">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center">
+          <i data-lucide="user" class="w-8 h-8 text-emerald-400"></i>
+        </div>
+        <div>
+          <div class="text-sm text-emerald-400 font-bold uppercase tracking-wider mb-1">Selamat Datang,</div>
+          <div class="text-3xl font-extrabold text-white" id="kiosk-nama">-</div>
+          <div class="text-lg text-slate-400" id="kiosk-kelas">-</div>
+        </div>
+      </div>
+      <button id="btn-selesai" class="bg-slate-700 hover:bg-red-600 transition-colors px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg">
+        <i data-lucide="log-out" class="w-5 h-5"></i> Selesai
+      </button>
+    </div>
+
+    <!-- Menu Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+      <button onclick="openModal('pinjaman')" class="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-3xl flex flex-col items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(37,99,235,0.3)]">
+        <div class="p-4 bg-white/10 rounded-2xl"><i data-lucide="book" class="w-12 h-12"></i></div>
+        <span class="font-bold text-2xl">Pinjaman Saya</span>
+      </button>
+      <button onclick="openModal('buku')" class="bg-gradient-to-br from-amber-500 to-amber-700 p-8 rounded-3xl flex flex-col items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(245,158,11,0.3)]">
+        <div class="p-4 bg-white/10 rounded-2xl"><i data-lucide="search" class="w-12 h-12"></i></div>
+        <span class="font-bold text-2xl">Cari Buku</span>
+      </button>
+      <button onclick="openModal('bebas')" class="bg-gradient-to-br from-emerald-500 to-emerald-700 p-8 rounded-3xl flex flex-col items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(16,185,129,0.3)]">
+        <div class="p-4 bg-white/10 rounded-2xl"><i data-lucide="graduation-cap" class="w-12 h-12"></i></div>
+        <span class="font-bold text-2xl">Bebas Pustaka</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL OVERLAY -->
+  <div id="modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto border border-slate-600 shadow-2xl relative">
+      <button onclick="closeModal()" class="absolute top-4 right-4 p-2 bg-slate-700 rounded-lg hover:bg-red-500 transition-colors z-10"><i data-lucide="x" class="w-6 h-6"></i></button>
+      <div id="modal-content" class="p-8"></div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let inactivityTimer;
+    let barcodeBuffer = ''; // Buffer untuk menangkap ketikan scanner
+
+    // --- LOGIKA UTAMA: MENDENGARKAN SCANNER DARI SELURUH HALAMAN ---
+    document.addEventListener('keydown', async (e) => {
+      // Jika sedang di menu, abaikan ketikan
+      if (!document.getElementById('screen-menu').classList.contains('hidden')) return;
+
+      if (e.key === 'Enter') {
+        const nis = barcodeBuffer.trim();
+        barcodeBuffer = ''; // Reset buffer
+        if (nis.length < 3) return; // Abaikan jika tidak valid
+
+        try {
+          const res = await fetch('/api/kiosk/scan', {
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify({nis})
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message);
+          
+          // Tampilkan Layar Menu
+          document.getElementById('screen-scan').classList.add('hidden');
+          const menu = document.getElementById('screen-menu');
+          menu.classList.remove('hidden');
+          menu.classList.add('flex');
+          
+          document.getElementById('kiosk-nama').textContent = data.anggota.nama;
+          document.getElementById('kiosk-kelas').textContent = data.anggota.kelas || data.anggota.jenis;
+          
+          window.kioskData = data; 
+          resetTimer();
+
+        } catch (err) {
+          alert(err.message);
+        }
+      } else if (e.key.length === 1) {
+        // Hanya tangkap karakter alfanumerik
+        barcodeBuffer += e.key;
+      }
+    });
+
+    // --- AUTO LOGOUT (60 DETIK) ---
+    function resetTimer() {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        closeModal();
+        document.getElementById('screen-menu').classList.add('hidden');
+        document.getElementById('screen-menu').classList.remove('flex');
+        document.getElementById('screen-scan').classList.remove('hidden');
+        barcodeBuffer = '';
+      }, 60000); 
+    }
+
+    // Tombol Selesai
+    document.getElementById('btn-selesai').addEventListener('click', () => {
+      document.getElementById('screen-menu').classList.add('hidden');
+      document.getElementById('screen-menu').classList.remove('flex');
+      document.getElementById('screen-scan').classList.remove('hidden');
+      clearTimeout(inactivityTimer);
+      barcodeBuffer = '';
+    });
+
+    // --- MODAL LOGIC ---
+    function openModal(type) {
+      resetTimer();
+      const modal = document.getElementById('modal');
+      const content = document.getElementById('modal-content');
+      modal.classList.remove('hidden');
+      
+      if (type === 'pinjaman') {
+        const p = window.kioskData.pinjamanAktif;
+        content.innerHTML = `<h3 class="text-2xl font-bold mb-4 text-white border-b border-slate-600 pb-2">Buku Sedang Dipinjam</h3>` + 
+          (p.length === 0 ? '<p class="text-slate-400 text-center py-8">Tidak ada buku yang sedang dipinjam.</p>' :
+          p.map(b => `<div class="bg-slate-900 p-5 rounded-xl mb-3 border border-slate-700">
+            <div class="font-bold text-lg text-white">${b.buku}</div>
+            <div class="text-sm text-amber-400 mt-2 flex items-center gap-1"><i data-lucide="clock" class="w-4 h-4"></i> Jatuh tempo: ${b.tanggal_jatuh}</div>
+          </div>`).join(''));
+      } 
+      else if (type === 'buku') {
+        content.innerHTML = `
+          <h3 class="text-2xl font-bold mb-4 text-white border-b border-slate-600 pb-2">Cari Ketersediaan Buku</h3>
+          <input type="text" id="search-buku" placeholder="Ketik judul atau penulis..." class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-4 text-white mb-6 outline-none focus:border-amber-500 text-lg">
+          <div id="result-buku" class="space-y-3"></div>
+        `;
+        document.getElementById('search-buku').focus();
+        document.getElementById('search-buku').addEventListener('input', async (e) => {
+          const q = e.target.value;
+          if (q.length < 3) return document.getElementById('result-buku').innerHTML = '';
+          const res = await fetch('/api/kiosk/buku?q=' + encodeURIComponent(q));
+          const json = await res.json();
+          document.getElementById('result-buku').innerHTML = json.data.map(b => `
+            <div class="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+              <div>
+                <div class="font-bold text-white">${b.judul}</div>
+                <div class="text-sm text-slate-400 mt-1">${b.penulis} · ${b.lokasi_rak || 'Rak ?'}</div>
+              </div>
+              <div class="font-bold text-lg ${b.stok_tersedia > 0 ? 'text-emerald-400' : 'text-red-400'}">Stok: ${b.stok_tersedia}</div>
+            </div>
+          `).join('') || '<p class="text-slate-500 text-center py-4">Buku tidak ditemukan.</p>';
+        });
+      }
+      else if (type === 'bebas') {
+        const isLunas = window.kioskData.bebasPustaka;
+        content.innerHTML = `
+          <h3 class="text-2xl font-bold mb-6 text-center text-white">Status Bebas Pustaka</h3>
+          <div class="text-center py-10">
+            ${isLunas 
+              ? '<div class="text-7xl font-black text-emerald-400 border-[6px] border-emerald-400 inline-block p-6 rounded-2xl rotate-[-5deg]">LUNAS</div>' 
+              : '<div class="text-5xl font-black text-red-500 border-[6px] border-red-500 inline-block p-6 rounded-2xl rotate-[-5deg]">BELUM LUNAS</div><p class="mt-6 text-lg text-red-400">Sisa ${window.kioskData.sisaPaket} buku paket belum dikembalikan.</p>'}
+          </div>
+        `;
+      }
+      if(window.lucide) lucide.createIcons();
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+      resetTimer();
+    }
+  </script>
+</body>
+</html>

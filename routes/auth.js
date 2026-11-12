@@ -51,12 +51,13 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ status: 'error', message: 'Username/NIS atau password salah' });
   }
 
-  if (user.role !== 'admin') {
+  // Hanya cek tabel anggota jika role-nya siswa atau guru
+  if (user.role === 'siswa' || user.role === 'guru') {
     const anggota = db.prepare('SELECT nama, status FROM anggota WHERE id = ?').get(user.anggota_id);
     if (!anggota || anggota.status !== 'aktif') {
       return res.status(403).json({ status: 'error', message: 'Akun dinonaktifkan. Hubungi petugas.' });
     }
-    user.nama = anggota.nama; // <--- SIMPAN NAMA ASLI
+    user.nama = anggota.nama;
   }
 
   auth.resetAttempts(ip);

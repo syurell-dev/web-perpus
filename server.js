@@ -14,6 +14,7 @@ const laporanRouter    = require('./routes/laporan');
 const pengaturanRouter = require('./routes/pengaturan');
 const scanRouter       = require('./routes/scan');
 const pengingatRouter  = require('./routes/pengingat');
+const kioskRouter      = require('./routes/kiosk');
 const digitalRouter    = require('./routes/digital'); // Rute Baru
 const portalRouter     = require('./routes/portal');
 
@@ -27,7 +28,7 @@ app.set('trust proxy', false);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-const PUBLIC_WHITELIST = ['/login.html', '/css/', '/js/', '/img/', '/vendor/'];
+const PUBLIC_WHITELIST = ['/login.html', '/css/', '/js/', '/img/', '/vendor/', '/kiosk.html', '/api/kiosk/'];
 app.use((req, res, next) => {
   if (req.path === '/' || req.path.endsWith('.html')) return next();
   return express.static(path.join(__dirname, 'public'))(req, res, next);
@@ -48,7 +49,7 @@ app.use('/api/laporan',    auth.requireAdmin, laporanRouter);
 app.use('/api/pengaturan', auth.requireAdmin, pengaturanRouter);
 app.use('/api/scan',       auth.requireAdmin, scanRouter);
 app.use('/api/pengingat',  auth.requireAdmin, pengingatRouter);
-
+app.use('/api/kiosk', kioskRouter);
 // Middleware Auth HTML (Memblokir akses /portal.html jika belum login)
 app.use((req, res, next) => {
   if (req.path === '/login.html') return next();

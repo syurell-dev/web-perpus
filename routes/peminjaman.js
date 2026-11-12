@@ -269,7 +269,6 @@ router.post('/:id/kembalikan', (req, res) => {
     if (!peminjaman) return res.status(404).json({ status: 'error', message: 'Peminjaman tidak ditemukan' });
 
     const tglKembali = req.body.tanggal_kembali || todayStr();
-    const dendaPerHari = parseInt(getSetting('denda_per_hari', '500'), 10);
 
     let details = db.prepare(`
       SELECT * FROM peminjaman_detail
@@ -286,11 +285,12 @@ router.post('/:id/kembalikan', (req, res) => {
     }
 
     const doReturn = db.transaction(() => {
+      // Update status buku kembali (denda diset 0 agar tidak error)
       const updateDetail = db.prepare(`
         UPDATE peminjaman_detail
         SET status = 'dikembalikan',
             tanggal_kembali = ?,
-            denda = ?
+            denda = 0
         WHERE id = ?
       `);
 
@@ -301,31 +301,28 @@ router.post('/:id/kembalikan', (req, res) => {
         WHERE id = ?
       `);
 
-      let totalDendaBaru = 0;
-      let isTerlambat = false; // ◄ TAMBAHKAN INI
+      let isTerlambat = false;
 
       for (const d of details) {
-        const denda = 0;
-        updateDetail.run(tglKembali, denda, d.id);
+        updateDetail.run(tglKembali, d.id);
         updateStok.run(d.jumlah, d.buku_id);
-        totalDendaBaru += denda;
-        if (tglKembali > peminjaman.tanggal_jatuh) isTerlambat = true; // ◄ TAMBAHKAN INI
-
+        
+        // Cek keterlambatan (jika tgl kembali > tgl jatuh tempo)
+        if (tglKembali > peminjaman.tanggal_jatuh) isTerlambat = true;
       }
 
+      // BERIKAN SANKSI JIKA TERLAMBAT
+      let bannedUntil = null;
       if (isTerlambat) {
-        const bannedUntil = addDays(tglKembali, 7);
+        bannedUntil = addDays(tglKembali, 7);
         db.prepare('UPDATE anggota SET banned_until = ? WHERE id = ?').run(bannedUntil, peminjaman.anggota_id);
       }
 
+      // Hitung sisa buku yang belum dikembalikan
       const sisa = db.prepare(`
         SELECT COUNT(*) as n FROM peminjaman_detail
         WHERE peminjaman_id = ? AND status = 'dipinjam'
       `).get(id).n;
-
-      const totalDenda = db.prepare(`
-        SELECT COALESCE(SUM(denda), 0) as total FROM peminjaman_detail WHERE peminjaman_id = ?
-      `).get(id).total;
 
       let statusBaru, tglKembaliHeader;
       if (sisa === 0) {
@@ -336,25 +333,30 @@ router.post('/:id/kembalikan', (req, res) => {
         tglKembaliHeader = null;
       }
 
+      // Update header peminjaman (TANPA DENDA)
       db.prepare(`
         UPDATE peminjaman
-        SET status = ?, tanggal_kembali = ?, denda = ?, updated_at = CURRENT_TIMESTAMP
+        SET status = ?, tanggal_kembali = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(statusBaru, tglKembaliHeader, totalDenda, id);
+      `).run(statusBaru, tglKembaliHeader, id);
 
-      return { totalDendaBaru, totalDenda, sisa };
+      return { sisa, bannedUntil };
     });
 
     const hasil = doReturn();
 
+    let message = `Berhasil mengembalikan ${details.length} buku.`;
+    if (hasil.bannedUntil) {
+      message += ` (Sanksi aktif sampai ${hasil.bannedUntil})`;
+    }
+
     res.json({
       status: 'ok',
-      message: `Berhasil mengembalikan ${details.length} buku. Denda: Rp ${hasil.totalDendaBaru.toLocaleString('id-ID')}`,
+      message: message,
       data: {
         buku_dikembalikan: details.length,
-        denda_transaksi_ini: hasil.totalDendaBaru,
-        total_denda: hasil.totalDenda,
-        sisa_belum_kembali: hasil.sisa
+        sisa_belum_kembali: hasil.sisa,
+        banned_until: hasil.bannedUntil
       }
     });
   } catch (err) {

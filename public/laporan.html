@@ -114,6 +114,9 @@
                 <button id="tab-paket" class="flex items-center gap-2 px-4 py-2 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent -mb-px rounded-none">
           <i data-lucide="package" class="w-4 h-4"></i> Buku Paket
         </button>
+        <button id="tab-peringkat" class="flex items-center gap-2 px-4 py-2 font-medium text-slate-500 hover:text-slate-800 border-b-2 border-transparent -mb-px rounded-none">
+          <i data-lucide="trophy" class="w-4 h-4"></i> Peringkat
+        </button>
       </div>
 
       <!-- FILTER (Global untuk semua tab) -->
@@ -234,6 +237,17 @@
                 <tr><td colspan="7" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-peringkat" class="hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i> Papan Peringkat Pembaca (Top 10)
+          </h2>
+          <div id="list-leaderboard" class="divide-y divide-slate-100">
+             <!-- Render via JS -->
           </div>
         </div>
       </section>

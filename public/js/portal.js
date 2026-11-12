@@ -62,30 +62,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('list-pinjaman').innerHTML = `<div class="p-4 bg-white rounded-xl text-center text-sm text-slate-500">Akun Guru/Admin tidak memiliki data pinjaman siswa.</div>`;
     }
 
-    const lb = res.data.leaderboard;
-    document.getElementById('list-leaderboard').innerHTML = lb.map((u, i) => {
-      let medal = '';
-      let bgClass = 'bg-slate-50';
-      let textClass = 'text-slate-500';
-      
-      if (i === 0) { medal = '🥇'; bgClass = 'bg-amber-50'; textClass = 'text-amber-600'; }
-      else if (i === 1) { medal = '🥈'; bgClass = 'bg-slate-100'; textClass = 'text-slate-600'; }
-      else if (i === 2) { medal = '🥉'; bgClass = 'bg-orange-50'; textClass = 'text-orange-600'; }
-      else { medal = `<span class="text-xs font-bold text-slate-400">#${i+1}</span>`; }
-
-      return `
-        <div class="p-4 flex items-center gap-4 hover:${bgClass} transition">
-          <div class="w-8 h-8 flex items-center justify-center text-lg">${medal}</div>
-          <div class="flex-1 min-w-0">
-            <div class="font-bold text-slate-800 text-sm truncate">${escapeHtml(u.nama)}</div>
-            <div class="text-xs text-slate-500">${escapeHtml(u.kelas || '-')}</div>
-          </div>
-          <div class="font-extrabold ${textClass} text-sm bg-white px-3 py-1 rounded-lg shadow-sm border border-slate-100">
-            ${u.total_buku} <span class="text-[10px] font-normal text-slate-400">Buku</span>
-          </div>
-        </div>
-      `;
-    }).join('');
   } catch (err) { console.error(err); }
 
   // --- LOAD KATALOG BUKU DIGITAL ---

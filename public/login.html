@@ -405,6 +405,7 @@
   </div> <!-- Penutup login-card -->
 
   <script>
+    let loggedInRole = null; // <--- TAMBAHKAN INI
     // (Biarkan kode JS Anda di bawah sini)
     const msg = document.getElementById('msg');
     const form = document.getElementById('form-login');
@@ -448,6 +449,7 @@
           if (!res.ok) throw new Error(data.message || data.error || 'Login gagal');
 
           if (data.mustChangePw) {
+            loggedInRole = data.role; // <--- TAMBAHKAN INI
             changing = true;
             stepLogin.style.display = 'none';
             stepChange.style.display = 'block';
@@ -455,7 +457,11 @@
             showMsg('Login berhasil. Silakan ganti kata sandi Anda.', 'info');
             setTimeout(() => document.getElementById('old_password').focus(), 100);
           } else {
-            location.href = '/';
+            if (data.role === 'kiosk') {
+              location.href = '/kiosk.html';
+            } else {
+              location.href = '/';
+            }
           }
         } catch (err) {
           showMsg(err.message);
@@ -484,7 +490,13 @@
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.message || data.error || 'Gagal ganti password');
-          location.href = '/';
+          
+          // Redirect berdasarkan role
+          if (loggedInRole === 'kiosk') {
+            location.href = '/kiosk.html';
+          } else {
+            location.href = '/';
+          }
         } catch (err) {
           showMsg(err.message);
           btn.disabled = false; btn.textContent = 'Simpan & Lanjut';

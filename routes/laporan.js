@@ -333,4 +333,20 @@ router.get('/paket', (req, res) => {
   }
 });
 
+router.get('/leaderboard', (req, res) => {
+  try {
+    const leaderboard = db.prepare(`
+      SELECT a.nama, a.kelas, a.nis, COUNT(p.id) as total_buku
+      FROM peminjaman p
+      JOIN anggota a ON a.id = p.anggota_id
+      GROUP BY a.id
+      ORDER BY total_buku DESC
+      LIMIT 10
+    `).all();
+    res.json({ status: 'ok', data: leaderboard });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: 'Server error' });
+  }
+});
+
 module.exports = router;
