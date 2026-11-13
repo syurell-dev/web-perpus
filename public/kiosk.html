@@ -29,6 +29,32 @@
     }
 
     .modal-overlay { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); }
+
+        /* Card Glassmorphism Modern */
+    .kiosk-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .kiosk-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+    }
+    .icon-wrapper {
+      transition: all 0.3s ease;
+    }
+    .kiosk-card:hover .icon-wrapper {
+      transform: scale(1.1);
+    }
+
+        /* Memastikan SVG tidak menelan event klik */
+    #modal button svg, 
+    #modal button i {
+      pointer-events: none !important;
+    }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center relative">
@@ -56,43 +82,55 @@
   </div>
 
   <!-- MENU SCREEN -->
-  <div id="screen-menu" class="hidden w-full h-full max-w-5xl p-8 flex-col">
+    <!-- MENU SCREEN -->
+  <div id="screen-menu" class="hidden w-full h-full max-w-5xl p-8 flex-col justify-center">
     <!-- Header Siswa -->
-    <div class="flex justify-between items-center bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 shadow-2xl">
-      <div class="flex items-center gap-4">
-        <div class="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center">
+    <div class="flex justify-between items-center bg-white/5 backdrop-blur-xl p-6 rounded-3xl border border-white/10 mb-8 shadow-2xl">
+      <div class="flex items-center gap-5">
+        <div class="w-16 h-16 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center">
           <i data-lucide="user" class="w-8 h-8 text-emerald-400"></i>
         </div>
         <div>
-          <div class="text-sm text-emerald-400 font-bold uppercase tracking-wider mb-1">Selamat Datang,</div>
-          <div class="text-3xl font-extrabold text-white" id="kiosk-nama">-</div>
-          <div class="text-lg text-slate-400" id="kiosk-kelas">-</div>
+          <div class="text-xs text-emerald-400 font-bold uppercase tracking-widest mb-1">Selamat Datang,</div>
+          <div class="text-3xl font-extrabold text-white tracking-tight" id="kiosk-nama">-</div>
+          <div class="text-sm text-slate-400 font-medium mt-1" id="kiosk-kelas">-</div>
         </div>
       </div>
-      <button id="btn-selesai" class="bg-slate-700 hover:bg-red-600 transition-colors px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg">
-        <i data-lucide="log-out" class="w-5 h-5"></i> Selesai
+      <button id="btn-selesai" class="bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-all px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 backdrop-blur-md">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Selesai
       </button>
     </div>
 
     <!-- Menu Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
-      <button onclick="openModal('pinjaman')" class="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-3xl flex flex-col items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(37,99,235,0.3)]">
-        <div class="p-4 bg-white/10 rounded-2xl"><i data-lucide="book" class="w-12 h-12"></i></div>
-        <span class="font-bold text-2xl">Pinjaman Saya</span>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Pinjaman -->
+      <button onclick="openModal('pinjaman')" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
+        <div class="w-24 h-24 bg-blue-500/10 text-blue-400 rounded-3xl flex items-center justify-center icon-wrapper group-hover:bg-blue-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]">
+          <i data-lucide="book" class="w-10 h-10"></i>
+        </div>
+        <span class="font-bold text-xl text-white tracking-wide">Pinjaman Saya</span>
       </button>
-      <button onclick="openModal('buku')" class="bg-gradient-to-br from-amber-500 to-amber-700 p-8 rounded-3xl flex flex-col items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(245,158,11,0.3)]">
-        <div class="p-4 bg-white/10 rounded-2xl"><i data-lucide="search" class="w-12 h-12"></i></div>
-        <span class="font-bold text-2xl">Cari Buku</span>
+
+      <!-- Cari Buku -->
+      <button onclick="openModal('buku')" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
+        <div class="w-24 h-24 bg-amber-500/10 text-amber-400 rounded-3xl flex items-center justify-center icon-wrapper group-hover:bg-amber-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]">
+          <i data-lucide="search" class="w-10 h-10"></i>
+        </div>
+        <span class="font-bold text-xl text-white tracking-wide">Cari Buku</span>
       </button>
-      <button onclick="openModal('bebas')" class="bg-gradient-to-br from-emerald-500 to-emerald-700 p-8 rounded-3xl flex flex-col items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(16,185,129,0.3)]">
-        <div class="p-4 bg-white/10 rounded-2xl"><i data-lucide="graduation-cap" class="w-12 h-12"></i></div>
-        <span class="font-bold text-2xl">Bebas Pustaka</span>
+
+      <!-- Bebas Pustaka -->
+      <button onclick="openModal('bebas')" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
+        <div class="w-24 h-24 bg-emerald-500/10 text-emerald-400 rounded-3xl flex items-center justify-center icon-wrapper group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+          <i data-lucide="graduation-cap" class="w-10 h-10"></i>
+        </div>
+        <span class="font-bold text-xl text-white tracking-wide">Bebas Pustaka</span>
       </button>
     </div>
   </div>
 
   <!-- MODAL OVERLAY -->
-  <div id="modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+  <div id="modal" class="hidden fixed inset-0 modal-overlay z-50 items-center justify-center p-4">
     <div class="bg-slate-800 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto border border-slate-600 shadow-2xl relative">
       <button onclick="closeModal()" class="absolute top-4 right-4 p-2 bg-slate-700 rounded-lg hover:bg-red-500 transition-colors z-10"><i data-lucide="x" class="w-6 h-6"></i></button>
       <div id="modal-content" class="p-8"></div>
@@ -171,7 +209,8 @@
       const modal = document.getElementById('modal');
       const content = document.getElementById('modal-content');
       modal.classList.remove('hidden');
-      
+      modal.classList.add('flex'); // <--- TAMBAHKAN INI
+
       if (type === 'pinjaman') {
         const p = window.kioskData.pinjamanAktif;
         content.innerHTML = `<h3 class="text-2xl font-bold mb-4 text-white border-b border-slate-600 pb-2">Buku Sedang Dipinjam</h3>` + 
@@ -220,6 +259,7 @@
 
     function closeModal() {
       document.getElementById('modal').classList.add('hidden');
+      document.getElementById('modal').classList.remove('flex');
       resetTimer();
     }
   </script>

@@ -144,12 +144,10 @@ router.get('/:id', (req, res) => {
     p.is_terlambat = (p.status === 'dipinjam' || p.status === 'sebagian') && p.tanggal_jatuh < today;
 
     if (p.is_terlambat) {
-      p.estimasi_denda = hitungDenda(p.tanggal_jatuh, today, dendaPerHari);
       p.hari_terlambat = Math.floor(
         (new Date(today + 'T00:00:00') - new Date(p.tanggal_jatuh + 'T00:00:00')) / (1000 * 60 * 60 * 24)
       );
     } else {
-      p.estimasi_denda = 0;
       p.hari_terlambat = 0;
     }
 

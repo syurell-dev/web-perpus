@@ -23,7 +23,7 @@ const state = {
 // ================================================================
 async function loadAnggota() {
   const tbody = document.getElementById('tabel-body');
-  tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>`;
   if (window.lucide) lucide.createIcons();
 
 

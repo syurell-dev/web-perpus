@@ -1,5 +1,5 @@
 // ================================================================
-// peminjaman.js — Logika halaman Peminjaman
+// peminjaman.js — Logika halaman Peminjaman (tanpa denda)
 // ================================================================
 
 const state = {
@@ -9,7 +9,7 @@ const state = {
   detailId: null,
   hapusId: null,
   bukuRowSeq: 0,
-  settings: { maxBuku: 3, lamaPinjam: 7, dendaPerHari: 500 }
+  settings: { maxBuku: 3, lamaPinjam: 7 }
 };
 
 // ================================================================
@@ -37,18 +37,13 @@ function formatTanggal(str) {
   return `${parseInt(d)} ${bulan[parseInt(m)-1]} ${y}`;
 }
 
-function formatRupiah(n) {
-  return 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
-}
-
 async function loadSettings() {
   try {
-    const res = await apiGet('/db-test');
+    const res = await apiGet('/pengaturan');
     const map = {};
-    (res.pengaturan || []).forEach(p => { map[p.key] = p.value; });
+    (res.data || []).forEach(p => { map[p.key] = p.value; });
     state.settings.maxBuku = parseInt(map.max_buku_per_pinjam || '3', 10);
     state.settings.lamaPinjam = parseInt(map.lama_pinjam_default || '7', 10);
-    state.settings.dendaPerHari = parseInt(map.denda_per_hari || '500', 10);
     document.getElementById('info-max-buku').textContent = `Maks: ${state.settings.maxBuku} buku`;
   } catch (e) { /* pakai default */ }
 }
@@ -58,9 +53,8 @@ async function loadSettings() {
 // ================================================================
 async function loadPeminjaman() {
   const tbody = document.getElementById('tabel-body');
-  tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400"><i data-lucide="loader"></i> Memuat data...</td></tr>`;
   if (window.lucide) lucide.createIcons();
-
 
   try {
     const res = await apiGet('/peminjaman', {
@@ -70,9 +64,8 @@ async function loadPeminjaman() {
     renderTabel(res.data);
     renderPagination(res.pagination);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle"></i> ${err.message}</td></tr>`;
-  if (window.lucide) lucide.createIcons();
-
+    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-red-500"><i data-lucide="x-circle"></i> ${err.message}</td></tr>`;
+    if (window.lucide) lucide.createIcons();
   }
 }
 
@@ -80,9 +73,8 @@ function renderTabel(list) {
   const tbody = document.getElementById('tabel-body');
 
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox"></i> Tidak ada data peminjaman</td></tr>`;
-  if (window.lucide) lucide.createIcons();
-
+    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-10 text-center text-slate-400"><i data-lucide="inbox"></i> Tidak ada data peminjaman</td></tr>`;
+    if (window.lucide) lucide.createIcons();
     return;
   }
 
@@ -117,7 +109,6 @@ function renderTabel(list) {
         </td>
         <td class="px-4 py-3 text-center text-slate-600 font-medium">${bukuInfo}</td>
         <td class="px-4 py-3 text-center">${statusBadge}${telatBadge}</td>
-        <td class="px-4 py-3 text-right text-slate-700 font-medium">${p.denda > 0 ? formatRupiah(p.denda) : '-'}</td>
         <td class="px-4 py-3 text-center" data-stop>
           <div class="flex gap-1 justify-center">
             <button data-action="bukaDetail" data-id="${p.id}" title="Detail"
@@ -177,8 +168,7 @@ function setupAutocomplete(inputEl, listEl, fetchFn, onSelect, minChars = 2) {
         const results = await fetchFn(q);
         if (!results.length) {
           listEl.innerHTML = '<div class="autocomplete-item text-slate-400">Tidak ada hasil</div>';
-  if (window.lucide) lucide.createIcons();
-
+          if (window.lucide) lucide.createIcons();
           listEl.classList.remove('hidden');
           return;
         }
@@ -198,7 +188,6 @@ function setupAutocomplete(inputEl, listEl, fetchFn, onSelect, minChars = 2) {
     }, 250);
   });
 
-  // Tutup kalau klik di luar
   document.addEventListener('click', (e) => {
     if (!inputEl.parentElement.contains(e.target)) listEl.classList.add('hidden');
   });
@@ -253,7 +242,6 @@ function tambahBarisBuku() {
   `;
   if (window.lucide) lucide.createIcons();
 
-
   rows.appendChild(div);
 
   const searchEl = div.querySelector('.buku-search');
@@ -274,8 +262,7 @@ function tambahBarisBuku() {
     searchEl.value = item.buku.judul;
     infoEl.classList.remove('hidden');
     infoEl.innerHTML = `<i data-lucide="book-open"></i> <b>${escapeHtml(item.buku.kode_buku)}</b> · Stok tersedia: <b>${item.buku.stok_tersedia}</b>`;
-  if (window.lucide) lucide.createIcons();
-
+    if (window.lucide) lucide.createIcons();
     jumlahEl.max = item.buku.stok_tersedia;
   });
 
@@ -341,34 +328,19 @@ async function bukaDetail(id) {
     '<div class="text-center text-slate-400 py-8"><i data-lucide="loader"></i> Memuat...</div>';
   if (window.lucide) lucide.createIcons();
 
-
   try {
     const res = await apiGet('/peminjaman/' + id);
     renderDetail(res.data);
   } catch (err) {
     document.getElementById('detail-content').innerHTML =
       `<div class="text-center text-red-500 py-8"><i data-lucide="x-circle"></i> ${err.message}</div>`;
-  if (window.lucide) lucide.createIcons();
-
+    if (window.lucide) lucide.createIcons();
   }
 }
 
 function renderDetail(p) {
-  const dendaPerHari = state.settings.dendaPerHari;
-  const today = todayStr();
-
   const detailRows = p.detail.map(d => {
     const isBack = d.status === 'dikembalikan';
-    const denda = d.denda || 0;
-
-    // Estimasi denda kalau belum kembali
-    let estimasi = 0;
-    if (!isBack) {
-      const jatuh = new Date(p.tanggal_jatuh + 'T00:00:00');
-      const now = new Date(today + 'T00:00:00');
-      const hari = Math.floor((now - jatuh) / (1000 * 60 * 60 * 24));
-      estimasi = hari > 0 ? hari * dendaPerHari : 0;
-    }
 
     return `
       <tr class="border-b border-slate-100">
@@ -385,16 +357,10 @@ function renderDetail(p) {
         <td class="px-3 py-3 text-xs text-slate-600 text-center">
           ${isBack ? formatTanggal(d.tanggal_kembali) : '-'}
         </td>
-        <td class="px-3 py-3 text-right font-medium ${denda > 0 ? 'text-red-600' : estimasi > 0 ? 'text-amber-600' : 'text-slate-500'}">
-          ${isBack
-            ? (denda > 0 ? formatRupiah(denda) : '-')
-            : (estimasi > 0 ? `<span title="Estimasi jika dikembalikan hari ini">≈ ${formatRupiah(estimasi)}</span>` : '-')}
-        </td>
       </tr>
     `;
   }).join('');
 
-  // Tombol kembalikan (hanya kalau masih ada yang dipinjam)
   const adaBelumKembali = p.detail.some(d => d.status === 'dipinjam');
   const tombolKembalikan = adaBelumKembali
     ? `<button data-action="kembalikanSemua" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2">
@@ -433,23 +399,22 @@ function renderDetail(p) {
 
       <!-- Anggota -->
       <div class="border border-slate-200 rounded-lg p-4">
-        <div class="text-xs text-slate-500 mb-1">👤 ANGGOTA</div>
+        <div class="text-xs text-slate-500 mb-1 flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> ANGGOTA</div>
         <div class="font-bold text-slate-800 text-lg">${escapeHtml(p.anggota_nama)}</div>
         <div class="text-sm text-slate-500 mt-0.5">
           NIS: ${escapeHtml(p.anggota_nis)} ${p.anggota_kelas ? '· Kelas: ' + escapeHtml(p.anggota_kelas) : ''} · ${p.anggota_jenis}
         </div>
       </div>
 
-      <!-- Info denda -->
-      ${p.is_terlambat && p.estimasi_denda > 0 ? `
+      <!-- Info keterlambatan -->
+      ${p.is_terlambat ? `
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
           <div class="flex items-start gap-3">
-            <div class="text-2xl">💰</div>
+            <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600 flex-shrink-0"></i>
             <div class="flex-1">
               <div class="font-bold text-red-800">Terlambat ${p.hari_terlambat} hari</div>
               <div class="text-sm text-red-600 mt-1">
-                Estimasi denda jika dikembalikan hari ini: <b>${formatRupiah(p.estimasi_denda)}</b>
-                <br><span class="text-xs">(${p.hari_terlambat} hari × ${formatRupiah(dendaPerHari)}/hari)</span>
+                Buku ini sudah melewati tanggal jatuh tempo. Sanksi administratif dapat dikenakan sesuai kebijakan perpustakaan.
               </div>
             </div>
           </div>
@@ -458,7 +423,9 @@ function renderDetail(p) {
 
       <!-- Tabel detail buku -->
       <div>
-        <div class="text-sm font-semibold text-slate-700 mb-2"><i data-lucide="book-open"></i> Daftar Buku</div>
+        <div class="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+          <i data-lucide="book-open" class="w-4 h-4"></i> Daftar Buku
+        </div>
         <div class="border border-slate-200 rounded-lg overflow-hidden">
           <table class="w-full text-sm">
             <thead class="bg-slate-50 border-b border-slate-200">
@@ -467,7 +434,6 @@ function renderDetail(p) {
                 <th class="px-3 py-2 text-center w-16">Jml</th>
                 <th class="px-3 py-2 text-center w-28">Status</th>
                 <th class="px-3 py-2 text-center w-32">Tgl Kembali</th>
-                <th class="px-3 py-2 text-right w-32">Denda</th>
               </tr>
             </thead>
             <tbody>${detailRows}</tbody>
@@ -475,18 +441,10 @@ function renderDetail(p) {
         </div>
       </div>
 
-      <!-- Total denda -->
-      ${p.denda > 0 ? `
-        <div class="bg-slate-100 rounded-lg p-4 flex justify-between items-center">
-          <span class="font-medium text-slate-700">Total Denda</span>
-          <span class="text-2xl font-bold text-red-600">${formatRupiah(p.denda)}</span>
-        </div>
-      ` : ''}
-
       <!-- Catatan -->
       ${p.catatan ? `
         <div>
-          <div class="text-xs text-slate-500 mb-1">📝 Catatan</div>
+          <div class="text-xs text-slate-500 mb-1 flex items-center gap-1"><i data-lucide="sticky-note" class="w-3 h-3"></i> Catatan</div>
           <div class="bg-slate-50 p-3 rounded-lg text-sm text-slate-700">${escapeHtml(p.catatan)}</div>
         </div>
       ` : ''}
@@ -498,7 +456,6 @@ function renderDetail(p) {
     </div>
   `;
   if (window.lucide) lucide.createIcons();
-
 }
 
 async function kembalikanSemua() {
@@ -508,7 +465,7 @@ async function kembalikanSemua() {
   try {
     const res = await apiPost(`/peminjaman/${state.detailId}/kembalikan`, {});
     toast(res.message, 'success');
-    bukaDetail(state.detailId); // refresh
+    bukaDetail(state.detailId);
     loadPeminjaman();
   } catch (err) {
     toast(err.message, 'error');
@@ -590,12 +547,12 @@ async function cetakStruk() {
 
         <div class="print-summary">
           <div class="row"><span>Total Buku Dipinjam</span><span><b>${p.detail.length} judul</b></span></div>
-          <div class="row"><span>Denda per Hari</span><span>Rp ${(state.settings.dendaPerHari || 500).toLocaleString('id-ID')}</span></div>
-          ${p.denda > 0 ? `<div class="row total"><span>Total Denda</span><span>Rp ${p.denda.toLocaleString('id-ID')}</span></div>` : ''}
+          <div class="row"><span>Status</span><span><b>${p.status}</b></span></div>
+          ${p.is_terlambat ? `<div class="row total"><span>Keterangan</span><span>Terlambat ${p.hari_terlambat} hari</span></div>` : ''}
         </div>
 
         <p style="margin-top:10pt;font-size:9pt;color:#555;font-style:italic;">
-          Harap kembalikan buku tepat waktu. Denda keterlambatan Rp ${(state.settings.dendaPerHari || 500).toLocaleString('id-ID')} per hari per buku.
+          Harap kembalikan buku sesuai tanggal jatuh tempo. Keterlambatan dapat dikenakan sanksi administratif sesuai kebijakan perpustakaan.
         </p>
 
         <div class="print-signature right">
@@ -605,8 +562,7 @@ async function cetakStruk() {
         </div>
       </div>
     `;
-  if (window.lucide) lucide.createIcons();
-
+    if (window.lucide) lucide.createIcons();
 
     window.print();
   } catch (err) {
@@ -621,7 +577,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadSettings();
 
-  // Setup autocomplete anggota
   const anggotaSearch = document.getElementById('anggota-search');
   const anggotaList = document.getElementById('anggota-list');
   const anggotaId = document.getElementById('anggota-id');
@@ -643,7 +598,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       `NIS: ${item.anggota.nis} ${item.anggota.kelas ? '· Kelas: ' + item.anggota.kelas : ''} · ${item.anggota.jenis}`;
   });
 
-  // Reset pilihan anggota kalau user ketik ulang
   anggotaSearch.addEventListener('input', () => {
     if (!anggotaSearch.value.trim()) {
       anggotaId.value = '';
@@ -651,10 +605,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Tanggal pinjam berubah → update jatuh tempo
   document.getElementById('tanggal-pinjam').addEventListener('change', updateJatuhTempo);
 
-  // Buka/tutup modal
   document.getElementById('btn-pinjam-baru').addEventListener('click', openModalPinjam);
   document.getElementById('btn-close-pinjam').addEventListener('click', closeModalPinjam);
   document.getElementById('btn-cancel-pinjam').addEventListener('click', closeModalPinjam);
@@ -669,19 +621,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('form-pinjam').addEventListener('submit', submitPeminjaman);
 
-  // Detail modal
   document.getElementById('btn-close-detail').addEventListener('click', () => {
     document.getElementById('modal-detail').classList.add('hidden');
   });
   document.getElementById('btn-print').addEventListener('click', cetakStruk);
 
-  // Hapus modal
   document.getElementById('btn-cancel-hapus').addEventListener('click', () => {
     document.getElementById('modal-hapus').classList.add('hidden');
   });
   document.getElementById('btn-konfirmasi-hapus').addEventListener('click', lakukanHapus);
 
-  // Filter & search
   let searchTimer = null;
   document.getElementById('search').addEventListener('input', (e) => {
     clearTimeout(searchTimer);
@@ -704,7 +653,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadPeminjaman();
   });
 
-  // Esc & backdrop
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeModalPinjam();
