@@ -3,6 +3,10 @@ database/*.db
 database/*.db-journal
 database/*.db-shm
 database/*.db-wal
+database/*.db.*
+database/*.bak-*
+database/*.old-*
+database/*.db copy*
 *.log
 .env
 backups/
