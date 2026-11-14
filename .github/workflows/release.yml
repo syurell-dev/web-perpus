@@ -69,7 +69,6 @@ jobs:
           console.log('127.0.0.1');
           EOF
 
-      # --- MEMBUAT START.BAT (HANYA WINDOWS) ---
       - name: Create start.bat
         if: matrix.platform == 'windows'
         run: |
@@ -100,7 +99,6 @@ jobs:
           pause
           EOF
 
-      # --- MEMBUAT START.SH (HANYA LINUX) ---
       - name: Create start.sh
         if: matrix.platform == 'linux'
         run: |
@@ -132,10 +130,8 @@ jobs:
           cd build-portable/app
           if [ "${{ matrix.platform }}" == "windows" ]; then
             npm install --omit=dev --no-audit --no-fund --platform=win32 2>&1 | tail -5
-            ls -la node_modules/better-sqlite3/prebuilds/win32-x64.node
           else
             npm install --omit=dev --no-audit --no-fund 2>&1 | tail -5
-            ls -la node_modules/better-sqlite3/prebuilds/linux-x64.node
           fi
 
       - name: Create ZIP
@@ -174,14 +170,14 @@ jobs:
           name: "Versi ${{ github.ref_name }}"
           generate_release_notes: true
           body: |
-            ## 📚 Perpustakaan SMPN 1 Taman Sidoarjo — ${{ github.ref_name }}
+            ## Perpustakaan SMPN 1 Taman Sidoarjo — ${{ github.ref_name }}
 
-            ### 🚀 Cara Pakai
+            ### Cara Pakai
             1. Pilih file ZIP sesuai sistem operasi (Windows atau Linux).
             2. Extract ke folder manapun.
             3. **Windows**: Dobel-klik **`start.bat`**.
             4. **Linux**: Buka terminal, ketik `chmod +x start.sh` lalu `./start.sh`.
-            5. **Password admin ada di file `database/password-admin-first-login.txt`**.
+            5. **Password admin** ada di file `database/password-admin-first-login.txt`.
             6. Browser otomatis terbuka di http://localhost:3000
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
