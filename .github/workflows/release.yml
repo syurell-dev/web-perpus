@@ -11,28 +11,40 @@ permissions:
 jobs:
   build-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          - platform: 'windows'
+            node_url: 'https://nodejs.org/dist/v22.20.0/win-x64/node.exe'
+            node_file: 'node.exe'
+            zip_name: 'app-windows'
+          - platform: 'linux'
+            node_url: 'https://nodejs.org/dist/v22.20.0/linux-x64/node-v22.20.0-linux-x64.tar.xz'
+            node_file: 'node'
+            zip_name: 'app-linux'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Download Node.exe Portable
+      - name: Download Node Portable (${{ matrix.platform }})
         run: |
           mkdir -p build-portable
-          curl -sL -f -o build-portable/node.exe https://nodejs.org/dist/v22.20.0/win-x64/node.exe
-          SIZE=$(stat -c%s build-portable/node.exe)
-          echo "Node.exe size: $SIZE bytes"
-          if [ "$SIZE" -lt 50000000 ]; then
-            echo "❌ Download gagal"
-            exit 1
+          if [ "${{ matrix.platform }}" == "windows" ]; then
+            curl -sL -f -o build-portable/node.exe ${{ matrix.node_url }}
+            SIZE=$(stat -c%s build-portable/node.exe)
+            if [ "$SIZE" -lt 50000000 ]; then exit 1; fi
+          else
+            curl -sL -f -o build-portable/node.tar.xz ${{ matrix.node_url }}
+            tar -xf build-portable/node.tar.xz -C build-portable
+            mv build-portable/node-v22.20.0-linux-x64/bin/node build-portable/node
+            rm -rf build-portable/node-v22.20.0-linux-x64 build-portable/node.tar.xz
+            chmod +x build-portable/node
           fi
 
       - name: Copy Project Files
@@ -40,18 +52,6 @@ jobs:
           mkdir -p build-portable/app
           cp server.js db.js package.json package-lock.json .gitignore build-portable/app/
           cp -r public routes middleware utils build-portable/app/
-
-      - name: Install Dependencies
-        run: |
-          cd build-portable/app
-          npm install --omit=dev --no-audit --no-fund 2>&1 | tail -5
-          echo "=== Cek prebuilds ==="
-          ls -la node_modules/better-sqlite3/prebuilds/
-          if [ ! -f "node_modules/better-sqlite3/prebuilds/win32-x64.node" ]; then
-            echo "❌ Binary Windows tidak ada!"
-            exit 1
-          fi
-          echo "✅ Binary Windows OK"
 
       - name: Create helper for IP
         run: |
@@ -69,7 +69,9 @@ jobs:
           console.log('127.0.0.1');
           EOF
 
+      # --- MEMBUAT START.BAT (HANYA WINDOWS) ---
       - name: Create start.bat
+        if: matrix.platform == 'windows'
         run: |
           cat > build-portable/start.bat << 'EOF'
           @echo off
@@ -77,10 +79,7 @@ jobs:
           cd /d "%~dp0"
           color 0A
           cls
-
-          :: Dapatkan IP Address Wi-Fi menggunakan Node.exe bawaan
           for /f "delims=" %%i in ('node.exe get-ip.js') do set LOCAL_IP=%%i
-
           echo.
           echo  ====================================================
           echo   PERPUSTAKAAN SMPN 1 TAMAN SIDOARJO
@@ -101,10 +100,48 @@ jobs:
           pause
           EOF
 
+      # --- MEMBUAT START.SH (HANYA LINUX) ---
+      - name: Create start.sh
+        if: matrix.platform == 'linux'
+        run: |
+          cat > build-portable/start.sh << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")"
+          IP=$(./node get-ip.js)
+          echo ""
+          echo "===================================================="
+          echo "  PERPUSTAKAAN SMPN 1 TAMAN SIDOARJO"
+          echo "===================================================="
+          echo ""
+          echo " Akses dari Komputer ini:"
+          echo "   http://localhost:3000"
+          echo ""
+          echo " Akses dari HP / Perangkat lain (Pastikan 1 Wi-Fi/LAN):"
+          echo "   http://$IP:3000"
+          echo ""
+          echo "===================================================="
+          echo " Tekan Ctrl+C untuk mematikan server."
+          echo ""
+          (sleep 3 && xdg-open "http://localhost:3000" 2>/dev/null) &
+          ./node app/server.js
+          EOF
+          chmod +x build-portable/start.sh
+
+      - name: Install Dependencies
+        run: |
+          cd build-portable/app
+          if [ "${{ matrix.platform }}" == "windows" ]; then
+            npm install --omit=dev --no-audit --no-fund --platform=win32 2>&1 | tail -5
+            ls -la node_modules/better-sqlite3/prebuilds/win32-x64.node
+          else
+            npm install --omit=dev --no-audit --no-fund 2>&1 | tail -5
+            ls -la node_modules/better-sqlite3/prebuilds/linux-x64.node
+          fi
+
       - name: Create ZIP
         run: |
           cd build-portable
-          zip -r -q -9 ../app-${{ github.ref_name }}.zip . \
+          zip -r -q -9 ../${{ matrix.zip_name }}-${{ github.ref_name }}.zip . \
             -x "*/node_modules/*/test/*" \
                "*/node_modules/*/tests/*" \
                "*/node_modules/*/docs/*" \
@@ -112,39 +149,39 @@ jobs:
                "*/node_modules/*/*.txt" \
                "*/node_modules/*/*.map" \
                "*/node_modules/*/*.d.ts" \
-               "*/node_modules/*/.eslint*" \
-               "*/node_modules/*/.editorconfig" \
-               "*/node_modules/*/.travis.yml" \
-               "*/node_modules/*/.github/*" \
-               "*/node_modules/*/example/*" \
-               "*/node_modules/*/examples/*" \
                "*/node_modules/.bin/*"
-          cd ..
-          echo "=== File ZIP hasil ==="
-          ls -lh app-*.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.zip_name }}-${{ github.ref_name }}
+          path: ${{ github.workspace }}/${{ matrix.zip_name }}-${{ github.ref_name }}.zip
+
+  create-release:
+    needs: build-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ github.workspace }}/app-${{ github.ref_name }}.zip
+          files: artifacts/*.zip
           name: "Versi ${{ github.ref_name }}"
           generate_release_notes: true
           body: |
             ## 📚 Perpustakaan SMPN 1 Taman Sidoarjo — ${{ github.ref_name }}
 
             ### 🚀 Cara Pakai
-            1. Download **`app-${{ github.ref_name }}.zip`** di bawah
-            2. Extract ke folder manapun
-            3. Dobel-klik **`start.bat`**
-            4. **Password admin muncul di cmd** — catat & simpan
-            5. Browser otomatis terbuka di http://localhost:3000
-            6. Login → wajib ganti password
-
-            ### 💻 Kebutuhan
-            - Windows 10/11 (64-bit)
-            - Tidak perlu install Node.js (sudah di-bundle)
-            - Offline-ready
-          draft: false
-          prerelease: false
+            1. Pilih file ZIP sesuai sistem operasi (Windows atau Linux).
+            2. Extract ke folder manapun.
+            3. **Windows**: Dobel-klik **`start.bat`**.
+            4. **Linux**: Buka terminal, ketik `chmod +x start.sh` lalu `./start.sh`.
+            5. **Password admin ada di file `database/password-admin-first-login.txt`**.
+            6. Browser otomatis terbuka di http://localhost:3000
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
