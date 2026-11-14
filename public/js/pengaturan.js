@@ -353,4 +353,58 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
+    // --- LOGIKA CEK UPDATE ---
+  const btnCek = document.getElementById('btn-cek-update');
+  const updateInfo = document.getElementById('update-info');
+  if (btnCek) {
+    btnCek.addEventListener('click', async () => {
+      btnCek.disabled = true;
+      btnCek.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Mencari...';
+      updateInfo.classList.add('hidden');
+      if (window.lucide) lucide.createIcons();
+
+      try {
+        const res = await apiGet('/system/check-update');
+        if (res.hasUpdate) {
+          updateInfo.innerHTML = `
+            <div class="text-left bg-emerald-50 text-emerald-800 p-3 rounded-lg border border-emerald-200 mt-2">
+              <p class="font-bold mb-1">Tersedia versi baru: v${res.latest}</p>
+              <p class="mb-3 text-[11px]">Versi Anda saat ini v${res.current}.</p>
+              <button id="btn-proses-update" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold transition">Update & Restart</button>
+            </div>
+          `;
+          updateInfo.classList.remove('hidden');
+          
+          document.getElementById('btn-proses-update').addEventListener('click', async (e) => {
+            e.target.disabled = true;
+            e.target.innerHTML = 'Mengunduh...';
+            try {
+              const updateRes = await apiPost('/system/apply-update', { 
+                downloadUrl: res.downloadUrl, 
+                latestVersion: res.latest 
+              });
+              alert(updateRes.message);
+              // Layar akan menunggu, server mati, diganti, dan server nyala lagi.
+              // Kita arahkan user untuk refresh dalam 10 detik
+              updateInfo.innerHTML = '<p class="text-slate-500 mt-2">Server sedang restart. Refresh halaman ini dalam 10 detik.</p>';
+            } catch (err) {
+              alert('Gagal update: ' + err.message);
+              e.target.disabled = false;
+              e.target.innerHTML = 'Coba Lagi';
+            }
+          });
+        } else {
+          updateInfo.innerHTML = `<div class="text-emerald-600 mt-2 flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> Aplikasi sudah versi terbaru (v${res.current})</div>`;
+          updateInfo.classList.remove('hidden');
+        }
+      } catch (err) {
+        updateInfo.innerHTML = `<div class="text-red-500 mt-2">Gagal cek update: ${err.message}</div>`;
+        updateInfo.classList.remove('hidden');
+      } finally {
+        btnCek.disabled = false;
+        btnCek.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i> Cek Pembaruan';
+        if (window.lucide) lucide.createIcons();
+      }
+    });
+  }
 });

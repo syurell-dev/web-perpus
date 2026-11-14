@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-
+const systemRouter     = require('./routes/system');
 const db = require('./db');
 const auth = require('./middleware/auth');
 
@@ -61,6 +61,7 @@ app.use('/api/anggota',    auth.requireAdmin, anggotaRouter);
 app.use('/api/peminjaman', auth.requireAdmin, peminjamanRouter);
 app.use('/api/laporan',    auth.requireAdmin, laporanRouter);
 app.use('/api/pengaturan', auth.requireAdmin, pengaturanRouter);
+app.use('/api/system', auth.requireAuth, auth.requireAdmin, systemRouter);
 app.use('/api/scan',       auth.requireAdmin, scanRouter);
 app.use('/api/pengingat',  auth.requireAdmin, pengingatRouter);
 // SECURITY: Protect kiosk routes (C1)
