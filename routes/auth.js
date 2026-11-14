@@ -121,6 +121,14 @@ router.post('/change-password', (req, res) => {
 
   session.mustChangePw = false;
 
+  // SECURITY: Hapus file password setelah admin menggantinya
+  const fs = require('fs');
+  const path = require('path');
+  const pwPath = path.join(__dirname, '..', 'database', 'password-admin-first-login.txt');
+  if (fs.existsSync(pwPath)) {
+    fs.unlinkSync(pwPath);
+  }
+
   res.json({ status: 'ok', message: 'Password berhasil diubah' });
 });
 

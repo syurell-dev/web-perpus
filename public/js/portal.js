@@ -177,8 +177,3 @@ async function renderPdfThumb(id) {
     }
   }
 }
-
-function escapeHtml(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-}

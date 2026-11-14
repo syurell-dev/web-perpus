@@ -21,3 +21,4 @@ repomix.config.json
 .repomixignore
 repomix-output.xml
 repomix-output*.xml
+database/*.txt

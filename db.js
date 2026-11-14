@@ -267,7 +267,11 @@ if (countUsers === 0) {
     INSERT INTO users (username, password_hash, password_salt, must_change_pw)
     VALUES (?, ?, ?, 1)
   `).run('admin', hash, salt);
-  console.log(`\n🔐 AKUN ADMIN DIBUAT\nUsername: admin\nPassword: ${randomPassword}\n`);
+  // SECURITY: Write to file instead of console (M8)
+  const pwPath = path.join(__dirname, 'database', 'password-admin-first-login.txt');
+  fs.writeFileSync(pwPath, randomPassword, { mode: 0o600 });
+  console.log(`\n📄 Password admin ditulis ke: ${pwPath}`);
+  console.log(`   Buka file tersebut, catat password, lalu HAPUS file tersebut setelah login pertama.\n`);
 }
 
 module.exports = Object.assign(db, { hashPassword });

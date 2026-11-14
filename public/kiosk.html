@@ -104,7 +104,7 @@
     <!-- Menu Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Pinjaman -->
-      <button onclick="openModal('pinjaman')" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
+      <button data-modal="pinjaman" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
         <div class="w-24 h-24 bg-blue-500/10 text-blue-400 rounded-3xl flex items-center justify-center icon-wrapper group-hover:bg-blue-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]">
           <i data-lucide="book" class="w-10 h-10"></i>
         </div>
@@ -112,7 +112,7 @@
       </button>
 
       <!-- Cari Buku -->
-      <button onclick="openModal('buku')" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
+      <button data-modal="buku" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
         <div class="w-24 h-24 bg-amber-500/10 text-amber-400 rounded-3xl flex items-center justify-center icon-wrapper group-hover:bg-amber-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]">
           <i data-lucide="search" class="w-10 h-10"></i>
         </div>
@@ -120,7 +120,7 @@
       </button>
 
       <!-- Bebas Pustaka -->
-      <button onclick="openModal('bebas')" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
+      <button data-modal="bebas" class="kiosk-card group p-10 rounded-3xl flex flex-col items-center justify-center gap-6 h-72">
         <div class="w-24 h-24 bg-emerald-500/10 text-emerald-400 rounded-3xl flex items-center justify-center icon-wrapper group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]">
           <i data-lucide="graduation-cap" class="w-10 h-10"></i>
         </div>
@@ -132,14 +132,23 @@
   <!-- MODAL OVERLAY -->
   <div id="modal" class="hidden fixed inset-0 modal-overlay z-50 items-center justify-center p-4">
     <div class="bg-slate-800 rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-y-auto border border-slate-600 shadow-2xl relative">
-      <button onclick="closeModal()" class="absolute top-4 right-4 p-2 bg-slate-700 rounded-lg hover:bg-red-500 transition-colors z-10"><i data-lucide="x" class="w-6 h-6"></i></button>
+      <button data-modal-close class="absolute top-4 right-4 p-2 bg-slate-700 rounded-lg hover:bg-red-500 transition-colors z-10"><i data-lucide="x" class="w-6 h-6"></i></button>
       <div id="modal-content" class="p-8"></div>
     </div>
   </div>
 
   <script src="/js/api.js"></script>
   <script>
-    let inactivityTimer;
+
+// SECURITY: Event delegation (H3)
+document.querySelectorAll('[data-modal]').forEach(btn =>
+  btn.addEventListener('click', () => openModal(btn.dataset.modal))
+);
+document.querySelectorAll('[data-modal-close]').forEach(btn =>
+  btn.addEventListener('click', () => closeModal())
+);
+
+let inactivityTimer;
     let barcodeBuffer = ''; // Buffer untuk menangkap ketikan scanner
 
     // --- LOGIKA UTAMA: MENDENGARKAN SCANNER DARI SELURUH HALAMAN ---
@@ -216,8 +225,8 @@
         content.innerHTML = `<h3 class="text-2xl font-bold mb-4 text-white border-b border-slate-600 pb-2">Buku Sedang Dipinjam</h3>` + 
           (p.length === 0 ? '<p class="text-slate-400 text-center py-8">Tidak ada buku yang sedang dipinjam.</p>' :
           p.map(b => `<div class="bg-slate-900 p-5 rounded-xl mb-3 border border-slate-700">
-            <div class="font-bold text-lg text-white">${b.buku}</div>
-            <div class="text-sm text-amber-400 mt-2 flex items-center gap-1"><i data-lucide="clock" class="w-4 h-4"></i> Jatuh tempo: ${b.tanggal_jatuh}</div>
+            <div class="font-bold text-lg text-white">${escapeHtml(b.buku)}</div>
+            <div class="text-sm text-amber-400 mt-2 flex items-center gap-1"><i data-lucide="clock" class="w-4 h-4"></i> Jatuh tempo: ${escapeHtml(b.tanggal_jatuh)}</div>
           </div>`).join(''));
       } 
       else if (type === 'buku') {
@@ -235,8 +244,8 @@
           document.getElementById('result-buku').innerHTML = json.data.map(b => `
             <div class="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
               <div>
-                <div class="font-bold text-white">${b.judul}</div>
-                <div class="text-sm text-slate-400 mt-1">${b.penulis} · ${b.lokasi_rak || 'Rak ?'}</div>
+                <div class="font-bold text-white">${escapeHtml(b.judul)}</div>
+                <div class="text-sm text-slate-400 mt-1">${escapeHtml(b.penulis)} · ${b.lokasi_rak || 'Rak ?'}</div>
               </div>
               <div class="font-bold text-lg ${b.stok_tersedia > 0 ? 'text-emerald-400' : 'text-red-400'}">Stok: ${b.stok_tersedia}</div>
             </div>

@@ -103,7 +103,7 @@ router.get('/domain', (req, res) => {
 //   - state 'unset'    → base = today (setup awal)
 //   - state 'ok'       → DITOLAK (belum masuk window 120 hari)
 // ================================================================
-router.get('/domain/perpanjang', (req, res) => {
+router.post('/domain/perpanjang', (req, res) => {
   try {
     const current = getDomainExpiryRaw();
     const info = computeState(current);

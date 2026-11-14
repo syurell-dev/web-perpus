@@ -1,6 +1,12 @@
 // ================================================================
 // scripts/test-otomatis.js — Uji Coba Otomatis (Fixed Timezone)
 // ================================================================
+// SECURITY: Guard production (M7)
+if (process.env.NODE_ENV === 'production') {
+  console.error('❌ Tidak boleh dijalankan di production. Set NODE_ENV != production.');
+  process.exit(1);
+}
+
 const express = require('express');
 const db = require('../db');
 const scanRouter = require('../routes/scan');

@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+// SECURITY: Rate limit map (C1)
+const scanAttempts = new Map();
+
 // POST /api/kiosk/scan — Catat kehadiran & ambil data
 router.post('/scan', (req, res) => {
   try {

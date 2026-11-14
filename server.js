@@ -23,7 +23,21 @@ const app = express();
 const HOST = process.env.HOST || '0.0.0.0'; // 0.0.0.0 artinya buka untuk semua device
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 
-app.set('trust proxy', false);
+app.set('trust proxy', 'loopback, linklocal, uniquelocal'); // SECURITY: Safe trust proxy (M2)
+
+// SECURITY: Security headers (M5)
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  if (req.path !== '/kiosk.html') {
+    res.setHeader('X-Frame-Options', 'DENY');
+  } else {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  }
+  res.setHeader('Referrer-Policy', 'same-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  next();
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -49,7 +63,8 @@ app.use('/api/laporan',    auth.requireAdmin, laporanRouter);
 app.use('/api/pengaturan', auth.requireAdmin, pengaturanRouter);
 app.use('/api/scan',       auth.requireAdmin, scanRouter);
 app.use('/api/pengingat',  auth.requireAdmin, pengingatRouter);
-app.use('/api/kiosk', kioskRouter);
+// SECURITY: Protect kiosk routes (C1)
+app.use('/api/kiosk', auth.requireAuth, auth.requireRole('kiosk'), kioskRouter);
 // Middleware Auth HTML (Memblokir akses /portal.html jika belum login)
 app.use((req, res, next) => {
   if (req.path === '/login.html') return next();
@@ -61,6 +76,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/ping', (req, res) => {
   res.json({ status: 'ok', message: 'Server perpus jalan' });
+});
+
+app.get('/api/version', (req, res) => {
+  const pkg = require('./package.json');
+  res.json({ version: 'v' + pkg.version });
 });
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Endpoint tidak ditemukan' }));

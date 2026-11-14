@@ -20,7 +20,9 @@ function createSession(user) {
         nama: user.nama || user.username, // <--- TAMBAHKAN INI
     anggota_id: user.anggota_id,
     mustChangePw: user.must_change_pw === 1,
-    expiresAt: Date.now() + SESSION_TTL_MS
+    expiresAt: Date.now() + SESSION_TTL_MS,
+    createdAt: Date.now(),
+    lastSeenAt: Date.now()
   });
   return id;
 }
@@ -34,6 +36,12 @@ function getSession(req) {
   const session = sessions.get(match[1]);
   if (!session) return null;
   if (Date.now() > session.expiresAt) { sessions.delete(match[1]); return null; }
+  // SECURITY: Idle timeout check (M1)
+  if (Date.now() - session.lastSeenAt > SESSION_TTL_MS) {
+    sessions.delete(match[1]);
+    return null;
+  }
+  session.lastSeenAt = Date.now();
   session._id = match[1];
   return session;
 }
@@ -142,6 +150,18 @@ function requireAuth(req, res, next) {
 }
 
 // Middleware khusus API: Mencegah Siswa/Guru memanipulasi data via API
+// SECURITY: Role check helper (C1)
+function requireRole(...roles) {
+  return (req, res, next) => {
+    const session = getSession(req);
+    if (!session || !roles.includes(session.role)) {
+      return res.status(403).json({ status: 'error', message: 'Akses ditolak' });
+    }
+    req.user = session;
+    next();
+  };
+}
+
 function requireAdmin(req, res, next) {
   const session = getSession(req);
   if (!session || session.role !== 'admin') {
@@ -151,9 +171,19 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// SECURITY: Cleanup expired sessions (M1)
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, session] of sessions.entries()) {
+    if (now - session.lastSeenAt > SESSION_TTL_MS) {
+      sessions.delete(id);
+    }
+  }
+}, 60 * 60 * 1000);
+
 module.exports = {
   createSession, destroySession, getSession,
   setSessionCookie, clearSessionCookie,
   checkRateLimit, recordFail, resetAttempts,
-  checkCSRF, requireAuth, requireAdmin
+  checkCSRF, requireAuth, requireAdmin, requireRole
 };

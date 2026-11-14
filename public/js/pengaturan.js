@@ -91,7 +91,7 @@ async function perpanjangDomain() {
 
   try {
     const res = await fetch('/api/pengingat/domain/perpanjang', {
-      method: 'GET',
+      method: 'POST',
       credentials: 'same-origin',
       headers: { 'Accept': 'application/json' }
     });

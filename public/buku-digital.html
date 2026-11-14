@@ -56,7 +56,7 @@
         <button id="btn-logout-admin" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm font-medium transition mb-4 border border-red-500/20">
           <i data-lucide="log-out" class="w-4 h-4"></i> Logout
         </button>
-        <div class="text-center text-xs text-slate-500">v1.2.0</div>
+        <div class="text-center text-xs text-slate-500 app-version-text">v1.3.5</div>
       </div>
       
       <script>
@@ -187,7 +187,7 @@
               <td class="px-4 py-3 font-medium text-slate-800">${escapeHtml(b.judul)}</td>
               <td class="px-4 py-3 text-slate-600">${escapeHtml(b.penulis || '-')}</td>
               <td class="px-4 py-3 text-center">
-                <button onclick="hapusBuku(${b.id})" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg transition" title="Hapus">
+                <button data-action="hapus" data-id="${b.id}" class="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded-lg transition" title="Hapus">
                   <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
               </td>
@@ -199,7 +199,7 @@
         }
       }
 
-      window.hapusBuku = async (id) => {
+      async function hapusBuku(id) {
         if (!confirm('Yakin ingin menghapus buku ini? File PDF akan dihapus permanen.')) return;
         try {
           await apiDelete('/digital/' + id);

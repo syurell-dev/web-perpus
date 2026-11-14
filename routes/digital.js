@@ -5,6 +5,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// SECURITY: Validasi magic bytes PDF (M3)
+function isPdf(filePath) {
+  const buf = Buffer.alloc(5);
+  const fd = fs.openSync(filePath, 'r');
+  fs.readSync(fd, buf, 0, 5, 0);
+  fs.closeSync(fd);
+  return buf.toString('ascii') === '%PDF-';
+}
+
 // Pastikan folder upload ada saat server start
 const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads', 'buku');
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -56,6 +65,11 @@ router.get('/file/:id', (req, res) => {
     const filePath = path.join(__dirname, '..', 'public', buku.file_url);
     if (!fs.existsSync(filePath)) return res.status(404).json({ status: 'error', message: 'File fisik tidak ditemukan' });
 
+    // SECURITY: Attachment headers (M3)
+    const filename = path.basename(buku.file_url);
+    res.setHeader('Content-Disposition', 'attachment; filename="' + encodeURIComponent(filename) + '"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', 'application/pdf');
     res.sendFile(filePath);
   } catch (err) {
     res.status(500).json({ status: 'error', message: 'Server error' });
@@ -75,6 +89,12 @@ router.post('/', (req, res) => {
       const { judul, penulis, kategori, deskripsi } = req.body;
       if (!req.file) return res.status(400).json({ status: 'error', message: 'File PDF wajib diupload' });
       if (!judul) return res.status(400).json({ status: 'error', message: 'Judul wajib diisi' });
+
+      // SECURITY: Cek magic bytes (M3)
+      if (!isPdf(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ status: 'error', message: 'File bukan PDF valid' });
+      }
 
       // Gunakan file_url
       const file_url = '/uploads/buku/' + req.file.filename;

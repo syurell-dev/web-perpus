@@ -153,3 +153,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// ================================================================
+// AUTO UPDATE VERSION TEXT
+// ================================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  // Cari semua elemen sidebar yang punya class 'app-version-text'
+  const versionElements = document.querySelectorAll('.app-version-text');
+  if (versionElements.length === 0) return;
+
+  try {
+    const res = await fetch('/api/version');
+    if (res.ok) {
+      const data = await res.json();
+      versionElements.forEach(el => {
+        el.textContent = data.version;
+      });
+    }
+  } catch (e) {
+    // Jika offline atau error, biarkan teks default
+  }
+});

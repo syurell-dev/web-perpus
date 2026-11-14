@@ -174,7 +174,7 @@
 
       try {
         const res = await fetch(CONFIG.renewEndpoint, {
-          method: 'GET',                     // GET → tidak dicek CSRF middleware Anda
+          method: 'POST',
           credentials: 'same-origin',
           headers: { 'Accept': 'application/json' }
         });
