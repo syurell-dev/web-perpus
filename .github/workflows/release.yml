@@ -19,7 +19,7 @@ jobs:
             node_file: 'node.exe'
             zip_name: 'app-windows'
           - platform: 'linux'
-            node_url: 'https://nodejs.org/dist/v22.20.0/linux-x64/node-v22.20.0-linux-x64.tar.xz'
+            node_url: 'https://nodejs.org/dist/v22.20.0/node-v22.20.0-linux-x64.tar.xz'
             node_file: 'node'
             zip_name: 'app-linux'
 
